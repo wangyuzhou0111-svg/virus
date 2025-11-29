@@ -21,6 +21,9 @@ class Camera:
 # Initialize Pygame
 pygame.init()
 
+# 禁用输入法（防止中文输入法干扰游戏按键）
+pygame.key.stop_text_input()
+
 # Set up game window
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 1000
@@ -52,8 +55,8 @@ camera = Camera()
 player_light_index = -1  # 初始化为-1，表示尚未创建
 
 # 迷宫相关常量
-MAZE_WIDTH = 150  # 迷宫宽度（格子数）
-MAZE_HEIGHT = 150  # 迷宫高度（格子数）
+MAZE_WIDTH = 75  # 迷宫宽度（格子数）
+MAZE_HEIGHT = 75  # 迷宫高度（格子数）
 WALL_COLOR = (20, 50, 50)  # 墙壁颜色
 PATH_COLOR = (0, 0, 0)  # 通道颜色
 
@@ -390,38 +393,43 @@ class Monster:
                 return False
         return True
 
-    def move_towards_player(self, player_x, player_y, maze=None):
+    def move_towards_player(self, player_x, player_y, maze=None, always_move=True):
+        """
+        怪物移动逻辑
+        always_move: 是否始终移动（即使不在玩家视野内也自由游荡）
+        """
         if not self.is_alive:
             return
-        
+
         # 优化：提前执行移动冷却检查
         if self.move_cooldown > 0:
             self.move_cooldown -= 1
             return
-            
+
         # 计算到玩家的距离（使用整数运算优化）
         dx_raw = player_x - self.x
         dy_raw = player_y - self.y
         distance_squared = dx_raw * dx_raw + dy_raw * dy_raw
-        tracking_range_squared = (CELL_SIZE * 5) * (CELL_SIZE * 5)
-        
-        # 只有当怪物在5格范围内才会自动靠近玩家
+        tracking_range_squared = (CELL_SIZE * 8) * (CELL_SIZE * 8)  # 增加追踪范围到8格
+
+        # 在追踪范围内才会自动靠近玩家
         if distance_squared < tracking_range_squared:
             # 使用快速距离近似避免开方运算
             distance = (distance_squared) ** 0.5 if distance_squared > 0 else 0
-            
+
             if distance > 0:
                 dx = (dx_raw / distance) * self.speed
                 dy = (dy_raw / distance) * self.speed
             else:
                 dx = dy = 0
         else:
-            # 优化随机游走：降低随机数生成频率
-            if random.random() < 0.02:  # 增加到2%的概率改变方向，提高机动性
-                self.move_direction = random.choice([(1,0), (-1,0), (0,1), (0,-1)])
-                
-            dx = self.move_direction[0] * self.speed
-            dy = self.move_direction[1] * self.speed
+            # 自由游荡模式：即使不在玩家附近也会移动
+            # 增加方向改变频率，让怪物更活跃
+            if random.random() < 0.05:  # 5%的概率改变方向
+                self.move_direction = random.choice([(1,0), (-1,0), (0,1), (0,-1), (1,1), (-1,-1), (1,-1), (-1,1)])
+
+            dx = self.move_direction[0] * self.speed * 0.6  # 游荡时速度稍慢
+            dy = self.move_direction[1] * self.speed * 0.6
         
         # 边界检查优化，增加边界缓冲区
         buffer = self.size // 2 + 5  # 增加5像素缓冲区
@@ -735,6 +743,23 @@ except (pygame.error, FileNotFoundError):
     print("警告：无法加载 中国球.png，将使用默认的圆形")
     player_image = None
 
+# 加载武器图片
+try:
+    weapon_image_original = pygame.image.load("铁剑.png").convert_alpha()
+    # 缩放武器图片
+    weapon_image_original = pygame.transform.scale(weapon_image_original, (32, 32))
+except (pygame.error, FileNotFoundError):
+    print("警告：无法加载 铁剑.png，将使用默认的武器形状")
+    weapon_image_original = None
+
+# 玩家朝向和武器攻击相关变量
+player_facing_angle = 0  # 玩家朝向角度（弧度）
+player_facing_direction = "right"  # 玩家朝向方向
+weapon_swing_angle = 0  # 武器挥动角度
+weapon_is_swinging = False  # 是否正在挥动武器
+weapon_swing_timer = 0  # 挥动计时器
+WEAPON_SWING_DURATION = 15  # 挥动持续帧数
+
 # 鼠标拖拽视角相关变量
 mouse_dragging = False
 last_mouse_x = 0
@@ -784,46 +809,6 @@ monster_spawn_timer = 0
 health_packs = generate_health_packs(1)  # 初始生成1个回血包
 health_pack_spawn_timer = 0
 
-# 双人模式相关变量
-multiplayer_mode = False  # 是否开启双人模式
-
-# Player 2 properties (仅在双人模式下使用)
-player2_size = CELL_SIZE - 10
-player2_x = CELL_SIZE * 3  # 第二个玩家的初始位置
-player2_y = CELL_SIZE * 1.5
-player2_hp = 100
-player2_max_hp = 100
-player2_base_attack = 20
-player2_weapon = Weapon("Wooden Sword", WEAPON_TYPES["Wooden Sword"]["attack"], WEAPON_TYPES["Wooden Sword"]["color"])
-player2_attack = player2_base_attack + player2_weapon.attack_bonus
-player2_defense = 5
-player2_exp = 0
-player2_level = 1
-player2_exp_to_next_level = 100
-player2_is_hit = False
-player2_hit_timer = 0
-player2_velocity_x = 0
-player2_velocity_y = 0
-player2_acceleration = 12.0
-player2_max_speed = 5
-player2_friction = 0.9
-player2_dash_speed = 120
-player2_dash_cooldown = 10
-player2_is_dashing = False
-player2_skills_cooldown = {name: 0 for name in SKILLS}
-player2_invincible = False
-player2_invincible_timer = 0
-player2_bullets = []  # 第二个玩家的子弹列表
-
-# 加载第二个玩家的图片（使用不同的颜色或图片）
-try:
-    player2_image = pygame.image.load("中国球.png").convert_alpha()
-    player2_image = pygame.transform.scale(player2_image, (player2_size, player2_size))
-    # 给第二个玩家添加一个蓝色色调
-    player2_image = pygame.transform.rotozoom(player2_image, 0, 1.0)
-except (pygame.error, FileNotFoundError):
-    print("警告：无法加载 中国球.png，第二个玩家将使用默认的圆形")
-    player2_image = None
 
 # 迷宫生成函数
 def generate_maze(width, height):
@@ -993,7 +978,6 @@ class Bullet:
 
 # 在Player properties部分添加子弹列表
 player_bullets = []
-player2_bullets = []  # 第二个玩家的子弹列表（双人模式用）
 
 # 在文件顶部定义关卡数据
 LEVELS = {
@@ -1048,8 +1032,18 @@ class Dialogue:
 
     def draw(self, window):
         if self.is_active:
-            text = FONT_LARGE.render(self.messages[self.current_message_index], True, WHITE)
-            window.blit(text, (10, 10))  # 在窗口的左上角显示对话
+            text = FONT_SMALL.render(self.messages[self.current_message_index], True, YELLOW)
+            text_rect = text.get_rect()
+            # 显示在屏幕顶部中央，带背景框
+            x = (WINDOW_WIDTH - text_rect.width) // 2
+            y = 5
+            # 绘制半透明背景
+            bg_rect = pygame.Rect(x - 10, y - 3, text_rect.width + 20, text_rect.height + 6)
+            bg_surface = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+            bg_surface.fill((0, 0, 0, 180))
+            window.blit(bg_surface, (bg_rect.x, bg_rect.y))
+            pygame.draw.rect(window, YELLOW, bg_rect, 1)
+            window.blit(text, (x, y))
 
 # 商店类
 class Shop:
@@ -1135,17 +1129,53 @@ for monster in monsters:
     if monster.check_collision(player_x, player_y, player_size):
         player_monster_dialogue.start()
 
+def find_safe_spawn_position(start_x, start_y, maze):
+    """寻找一个不在墙内的安全重生位置"""
+    # 首先检查起始位置是否安全
+    if not check_collision_with_maze(start_x, start_y, player_size, maze):
+        return start_x, start_y
+
+    # 螺旋搜索安全位置
+    search_radius = CELL_SIZE
+    max_radius = CELL_SIZE * 20  # 最大搜索半径
+
+    while search_radius <= max_radius:
+        # 在当前半径上搜索8个方向
+        for angle in range(0, 360, 45):
+            radian = math.radians(angle)
+            test_x = start_x + math.cos(radian) * search_radius
+            test_y = start_y + math.sin(radian) * search_radius
+
+            # 确保在游戏边界内
+            test_x = max(CELL_SIZE * 2, min(GAME_WIDTH - CELL_SIZE * 2, test_x))
+            test_y = max(CELL_SIZE * 2, min(GAME_HEIGHT - CELL_SIZE * 2, test_y))
+
+            # 检查是否安全
+            if not check_collision_with_maze(test_x, test_y, player_size, maze):
+                return test_x, test_y
+
+        search_radius += CELL_SIZE // 2
+
+    # 如果找不到安全位置，返回迷宫入口附近
+    return CELL_SIZE * 1.5, CELL_SIZE * 1.5
+
 def respawn_player():
     global player_x, player_y, player_hp, player_is_hit, player_hit_timer
-    # Reset player position to the center of the game area
-    player_x = GAME_WIDTH // 2
-    player_y = GAME_HEIGHT // 2
+
+    # 尝试在游戏中心重生，如果卡墙则寻找安全位置
+    target_x = GAME_WIDTH // 2
+    target_y = GAME_HEIGHT // 2
+
+    # 寻找安全的重生位置
+    safe_x, safe_y = find_safe_spawn_position(target_x, target_y, maze)
+    player_x = safe_x
+    player_y = safe_y
+
     # Reset player health
     player_hp = player_max_hp
     # Reset hit status
     player_is_hit = False
     player_hit_timer = 0
-    # Optionally reset other player attributes if needed
 
 # 初始化商店
 shop = Shop()
@@ -1157,6 +1187,11 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            # 优先处理复活按键（游戏结束时）
+            if event.key == pygame.K_r and game_over:
+                game_over = False
+                respawn_player()
+                continue
             if event.key == pygame.K_ESCAPE:
                 running = False
             elif event.key == pygame.K_l:  # 按L键切换穿墙模式
@@ -1234,16 +1269,6 @@ while running:
                 upgrade_weapon()
             elif event.key == pygame.K_LSHIFT:  # 按住Shift键开始冲刺
                 is_dashing = True  # 设置冲刺状态为True
-            elif event.key == pygame.K_x:  # 按X键远程射击（根据用户记忆）
-                # 使用鼠标位置计算射击方向
-                mouse_x, mouse_y = pygame.mouse.get_pos()  # 获取鼠标位置
-                # 转换为世界坐标
-                world_mouse_x = mouse_x + camera_x
-                world_mouse_y = mouse_y + camera_y
-                player_angle = math.atan2(world_mouse_y - player_y, world_mouse_x - player_x)  # 计算角度
-                direction = (math.cos(player_angle), math.sin(player_angle))  # 计算射击方向
-                bullet = Bullet(player_x, player_y, direction, 10, WHITE)  # 创建子弹
-                player_bullets.append(bullet)  # 添加到子弹列表
             elif event.key == pygame.K_k:  # 按K键降级武器
                 downgrade_weapon()
             elif event.key == pygame.K_q:  # 按Q键触发滑动攻击
@@ -1349,7 +1374,7 @@ while running:
                 skill_effects.append({
                     "x": player_x,
                     "y": player_y,
-                    "range": dash_range,
+                    "range": 60,  # 滑动范围
                     "color": (255, 255, 100),  # 淡黄色滑动范围
                     "timer": 10
                 })
@@ -1415,60 +1440,14 @@ while running:
                     print("购买成功：钢剑")
                 else:
                     print("购买失败：经验不足或已拥有更高级武器")
-            elif event.key == pygame.K_9:  # 按 9 键切换双人模式
-                multiplayer_mode = not multiplayer_mode
-                
-                # 添加切换特效
-                effect_color = (0, 255, 0) if multiplayer_mode else (255, 255, 255)  # 绿色或白色
-                for _ in range(30):
-                    angle = random.uniform(0, math.pi * 2)
-                    distance = random.uniform(20, 60)
-                    particle_system.add_particle(
-                        player_x + math.cos(angle) * distance,
-                        player_y + math.sin(angle) * distance,
-                        (*effect_color, 200),  # 特效颜色
-                        math.cos(angle) * 3,
-                        math.sin(angle) * 3,
-                        40, 4, 0.95, 0
-                    )
-                
-                # 添加状态视觉指示
-                skill_effects.append({
-                    "x": player_x,
-                    "y": player_y,
-                    "range": 80,
-                    "color": effect_color,
-                    "timer": 120  # 持续2秒
-                })
-                
-                # 如果开启双人模式，也在第二个玩家位置添加特效
-                if multiplayer_mode:
-                    for _ in range(20):
-                        angle = random.uniform(0, math.pi * 2)
-                        distance = random.uniform(15, 40)
-                        particle_system.add_particle(
-                            player2_x + math.cos(angle) * distance,
-                            player2_y + math.sin(angle) * distance,
-                            (0, 255, 255, 200),  # 青色特效（第二个玩家）
-                            math.cos(angle) * 2,
-                            math.sin(angle) * 2,
-                            30, 3, 0.9, 0
-                        )
-                    
-                    skill_effects.append({
-                        "x": player2_x,
-                        "y": player2_y,
-                        "range": 60,
-                        "color": (0, 255, 255),  # 青色光环
-                        "timer": 120
-                    })
-                
-                status_text = "双人模式开启" if multiplayer_mode else "双人模式关闭"
-                print(status_text)
         
         # 鼠标事件处理
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # 左键：近战攻击（根据用户记忆优化）
+                # 触发武器挥动
+                weapon_is_swinging = True
+                weapon_swing_timer = WEAPON_SWING_DURATION
+
                 # 计算攻击范围内的敌人
                 attack_range = 60  # 攻击范围（根据用户记忆设为60像素）
                 for monster in monsters:
@@ -1582,15 +1561,19 @@ while running:
         acceleration_x = 0
         acceleration_y = 0
         
-        # 第一个玩家只使用WASD键，不使用箭头键
-        if keys[pygame.K_a]:
+        # 第一个玩家使用WASD键或方向键
+        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
             acceleration_x -= player_acceleration
-        if keys[pygame.K_d]:
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             acceleration_x += player_acceleration
-        if keys[pygame.K_w]:
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
             acceleration_y -= player_acceleration
-        if keys[pygame.K_s]:
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
             acceleration_y += player_acceleration
+
+        # 根据移动方向更新玩家朝向
+        if acceleration_x != 0 or acceleration_y != 0:
+            player_facing_angle = math.atan2(acceleration_y, acceleration_x)
             
         # 按住Shift键加速
         if keys[pygame.K_LSHIFT] and player_dash_cooldown <= 0:
@@ -1642,109 +1625,6 @@ while running:
         player_x = max(player_size // 2, min(GAME_WIDTH - player_size // 2, player_x))
         player_y = max(player_size // 2, min(GAME_HEIGHT - player_size // 2, player_y))
 
-        # 处理第二个玩家的移动（仅在双人模式下）
-        if multiplayer_mode:
-            # 第二个玩家的加速度
-            player2_acceleration_x = 0
-            player2_acceleration_y = 0
-            
-            # 第二个玩家的控制键：上下左右箭头键
-            if keys[pygame.K_LEFT]:
-                player2_acceleration_x -= player2_acceleration
-            if keys[pygame.K_RIGHT]:
-                player2_acceleration_x += player2_acceleration
-            if keys[pygame.K_UP]:
-                player2_acceleration_y -= player2_acceleration
-            if keys[pygame.K_DOWN]:
-                player2_acceleration_y += player2_acceleration
-            
-            # 第二个玩家的冲刺（使用空格键）
-            if keys[pygame.K_SPACE] and player2_dash_cooldown <= 0:
-                speed_multiplier = player2_dash_speed / player2_max_speed
-                player2_velocity_x *= speed_multiplier
-                player2_velocity_y *= speed_multiplier
-                player2_dash_cooldown = DASH_COOLDOWN_MAX
-            
-            # 更新第二个玩家的速度
-            player2_velocity_x += player2_acceleration_x
-            player2_velocity_y += player2_acceleration_y
-            
-            # 应用摩擦力
-            player2_velocity_x *= player2_friction
-            player2_velocity_y *= player2_friction
-            
-            # 限制最大速度
-            player2_speed = (player2_velocity_x ** 2 + player2_velocity_y ** 2) ** 0.5
-            if player2_speed > player2_max_speed:
-                player2_velocity_x = player2_velocity_x / player2_speed * player2_max_speed
-                player2_velocity_y = player2_velocity_y / player2_speed * player2_max_speed
-            
-            # 计算第二个玩家的下一个位置
-            player2_next_x = player2_x + player2_velocity_x
-            player2_next_y = player2_y + player2_velocity_y
-            
-            # 更新第二个玩家的冲刺冷却
-            if player2_dash_cooldown > 0:
-                player2_dash_cooldown -= 1
-            
-            # 检查第二个玩家的碰撞（穿墙模式下也对第二个玩家生效）
-            if no_clip_mode:
-                player2_x = player2_next_x
-                player2_y = player2_next_y
-            else:
-                # 添加安全边界检查
-                buffer = player2_size // 2 + 5  # 增加5像素缓冲区
-                safe_next_x = max(buffer, min(GAME_WIDTH - buffer, player2_next_x))
-                safe_next_y = max(buffer, min(GAME_HEIGHT - buffer, player2_next_y))
-                
-                # 检查目标位置是否有效
-                can_move_to_target = not check_collision_with_maze(safe_next_x, safe_next_y, player2_size, maze)
-                
-                if can_move_to_target:
-                    player2_x = safe_next_x
-                    player2_y = safe_next_y
-                else:
-                    # 尝试分别在x和y方向移动（滑墙效果）
-                    can_move_x = not check_collision_with_maze(safe_next_x, player2_y, player2_size, maze)
-                    can_move_y = not check_collision_with_maze(player2_x, safe_next_y, player2_size, maze)
-                    
-                    if can_move_x:
-                        player2_x = safe_next_x
-                        # 在x方向移动时保持y方向的动量
-                    elif can_move_y:
-                        player2_y = safe_next_y
-                        # 在y方向移动时保持x方向的动量
-                    else:
-                        # 如果两个方向都不能移动，尝试微调位置逃脱卡墙
-                        escaped = False
-                        escape_directions = [
-                            (3, 0), (-3, 0), (0, 3), (0, -3),
-                            (2, 2), (-2, -2), (2, -2), (-2, 2)
-                        ]
-                        
-                        for escape_dx, escape_dy in escape_directions:
-                            escape_x = player2_x + escape_dx
-                            escape_y = player2_y + escape_dy
-                            
-                            # 确保不越界
-                            escape_x = max(buffer, min(GAME_WIDTH - buffer, escape_x))
-                            escape_y = max(buffer, min(GAME_HEIGHT - buffer, escape_y))
-                            
-                            if not check_collision_with_maze(escape_x, escape_y, player2_size, maze):
-                                player2_x = escape_x
-                                player2_y = escape_y
-                                escaped = True
-                                break
-                        
-                        # 如果仍然无法逃脱，重置速度防止卡在墙里
-                        if not escaped:
-                            player2_velocity_x = 0
-                            player2_velocity_y = 0
-            
-            # 确保第二个玩家不会超出游戏边界
-            player2_x = max(player2_size // 2, min(GAME_WIDTH - player2_size // 2, player2_x))
-            player2_y = max(player2_size // 2, min(GAME_HEIGHT - player2_size // 2, player2_y))
-
         # 更新相机位置（跟随玩家或鼠标拖拽控制）
         if camera_follow_player:
             camera_x = player_x - WINDOW_WIDTH // 2
@@ -1759,16 +1639,7 @@ while running:
             if monster.is_alive:
                 # 只更新视野范围内的怪物
                 if is_in_view(monster.x, monster.y, camera_x, camera_y):
-                    # 在双人模式下，怪物选择距离最近的玩家进行追踪
-                    if multiplayer_mode:
-                        dist1 = ((monster.x - player_x) ** 2 + (monster.y - player_y) ** 2) ** 0.5
-                        dist2 = ((monster.x - player2_x) ** 2 + (monster.y - player2_y) ** 2) ** 0.5
-                        if dist1 <= dist2:
-                            monster.move_towards_player(player_x, player_y, maze)
-                        else:
-                            monster.move_towards_player(player2_x, player2_y, maze)
-                    else:
-                        monster.move_towards_player(player_x, player_y, maze)
+                    monster.move_towards_player(player_x, player_y, maze)
                 elif ((monster.x - player_x) ** 2 + (monster.y - player_y) ** 2) < (CELL_SIZE * 8) ** 2:
                     # 在追踪范围内但不在视野内的怪物，使用简化更新
                     monster.move_towards_player(player_x, player_y, None)  # 不传递迷宫以减少计算
@@ -1823,43 +1694,11 @@ while running:
                     if player_hp <= 0:
                         game_over = True
                         break
-            
-            # 在双人模式下，怪物也可以攻击第二个玩家
-            if multiplayer_mode and monster.can_attack_player(player2_x, player2_y) and monster.is_alive:
-                if monster.attack_player(player2_x, player2_y):
-                    # 怪物攻击第二个玩家
-                    if not player2_invincible:  # 检查第二个玩家是否无敌
-                        damage = max(monster.attack - player2_defense, 0)
-                        player2_hp -= damage
-                        player2_is_hit = True
-                        player2_hit_timer = 30  # 闪烁持续30帧
-                        
-                        # 添加攻击特效
-                        for _ in range(10):
-                            angle = random.uniform(0, math.pi * 2)
-                            particle_system.add_particle(
-                                player2_x + random.uniform(-10, 10),
-                                player2_y + random.uniform(-10, 10),
-                                (255, 0, 255, 200),  # 紫色攻击粒子（第二个玩家）
-                                math.cos(angle) * 2,
-                                math.sin(angle) * 2,
-                                20, 3, 0.9, 0
-                            )
-                    
-                    if player2_hp <= 0:
-                        # 双人模式下，任意一个玩家死亡都结束游戏
-                        game_over = True
-                        break
 
         # 处理回血包
         for health_pack in health_packs:
-            # 第一个玩家吃回血包
             if health_pack.active and health_pack.check_collision(player_x, player_y, player_size):
                 player_hp = min(player_hp + HEALTH_RESTORE_AMOUNT, player_max_hp)
-                health_pack.active = False
-            # 在双人模式下，第二个玩家也可以吃回血包
-            elif multiplayer_mode and health_pack.active and health_pack.check_collision(player2_x, player2_y, player2_size):
-                player2_hp = min(player2_hp + HEALTH_RESTORE_AMOUNT, player2_max_hp)
                 health_pack.active = False
         
         # 清理已使用的回血包
@@ -2094,50 +1933,107 @@ while running:
         if is_in_view(monster.x, monster.y, camera_x, camera_y):
             monster.draw(window, camera_x, camera_y)
 
+    # 判断玩家朝向（四个方向：右、左、上、下）
+    angle_deg = math.degrees(player_facing_angle)
+    # 归一化到 -180 到 180
+    while angle_deg > 180:
+        angle_deg -= 360
+    while angle_deg < -180:
+        angle_deg += 360
+
+    # 确定朝向：右(-45~45), 下(45~135), 左(135~180 or -180~-135), 上(-135~-45)
+    if -45 <= angle_deg <= 45:
+        player_direction = "right"
+    elif 45 < angle_deg <= 135:
+        player_direction = "down"
+    elif angle_deg > 135 or angle_deg < -135:
+        player_direction = "left"
+    else:
+        player_direction = "up"
+
     # 绘制玩家
     if not player_is_hit or (player_hit_timer // 3) % 2 == 0:
         if player_image:
-            # 使用中国球图片
-            player_rect = player_image.get_rect(center=(player_x - camera_x, player_y - camera_y))
-            window.blit(player_image, player_rect)
+            # 根据朝向翻转/显示图片
+            if player_direction == "left":
+                display_player = pygame.transform.flip(player_image, True, False)
+            else:
+                display_player = player_image
+            player_rect = display_player.get_rect(center=(player_x - camera_x, player_y - camera_y))
+            window.blit(display_player, player_rect)
         else:
             # 备用：绘制玩家本体（黄色圆形）
             pygame.draw.circle(window, YELLOW,
                              (player_x - camera_x, player_y - camera_y),
                              player_size // 2)
 
-        # 绘玩家光晕（保留特效）
-        glow_surface = pygame.Surface((player_size * 2, player_size * 2), pygame.SRCALPHA)
-        for radius in range(player_size, 0, -2):
-            alpha = int(100 * (radius / player_size))
-            pygame.draw.circle(glow_surface, (*PLAYER_GLOW, alpha),
-                             (player_size, player_size), radius)
-        window.blit(glow_surface,
-                   (player_x - camera_x - player_size,
-                    player_y - camera_y - player_size))
+    # 绘制武器（握在手里，只有左右方向）
+    screen_player_x = player_x - camera_x
+    screen_player_y = player_y - camera_y
 
-    # 在双人模式下绘制第二个玩家
-    if multiplayer_mode:
-        if not player2_is_hit or (player2_hit_timer // 3) % 2 == 0:
-            if player2_image:
-                # 使用第二个玩家的图片（可以是不同颜色的球）
-                player2_rect = player2_image.get_rect(center=(player2_x - camera_x, player2_y - camera_y))
-                window.blit(player2_image, player2_rect)
-            else:
-                # 备用：绘制第二个玩家本体（蓝色圆形）
-                pygame.draw.circle(window, BLUE,
-                                 (player2_x - camera_x, player2_y - camera_y),
-                                 player2_size // 2)
+    # 武器挥动动画更新
+    if weapon_is_swinging:
+        weapon_swing_timer -= 1
+        swing_progress = 1 - (weapon_swing_timer / WEAPON_SWING_DURATION)
+        # 挥动角度从+60度到-60度（从上往下挥）
+        weapon_swing_angle = 60 - swing_progress * 120
+        if weapon_swing_timer <= 0:
+            weapon_is_swinging = False
+            weapon_swing_angle = 0
 
-            # 绘第二个玩家的光晕（使用不同的颜色）
-            glow_surface2 = pygame.Surface((player2_size * 2, player2_size * 2), pygame.SRCALPHA)
-            for radius in range(player2_size, 0, -2):
-                alpha = int(100 * (radius / player2_size))
-                pygame.draw.circle(glow_surface2, (100, 200, 255, alpha),  # 蓝色光晕
-                                 (player2_size, player2_size), radius)
-            window.blit(glow_surface2,
-                       (player2_x - camera_x - player2_size,
-                        player2_y - camera_y - player2_size))
+    # 判断朝左还是朝右（只有左右两个方向）
+    facing_left = player_direction == "left" or player_direction == "up"  # 上也算左
+
+    # 手的位置（紧贴角色边缘）
+    hand_offset_x = player_size // 2 - 5  # 手在角色边缘内侧一点
+    hand_offset_y = 3  # 手稍微偏下
+
+    if facing_left:
+        hand_x = screen_player_x - hand_offset_x
+        hand_y = screen_player_y + hand_offset_y
+        weapon_angle = 180 - weapon_swing_angle  # 朝左挥动
+    else:
+        hand_x = screen_player_x + hand_offset_x
+        hand_y = screen_player_y + hand_offset_y
+        weapon_angle = weapon_swing_angle  # 朝右挥动
+
+    if weapon_image_original:
+        # 准备武器图片
+        if facing_left:
+            weapon_img = pygame.transform.flip(weapon_image_original, True, False)
+            rot_angle = -weapon_angle + 180 - 45
+        else:
+            weapon_img = weapon_image_original
+            rot_angle = -weapon_angle - 45
+
+        # 旋转武器
+        rotated_weapon = pygame.transform.rotate(weapon_img, rot_angle)
+
+        # 计算旋转后剑柄的位置偏移
+        # 原图中剑柄在图片中心，剑尖延伸出去
+        # 旋转后需要调整位置，让剑柄固定在手的位置
+        weapon_half_size = 16  # 武器图片一半大小
+        angle_rad = math.radians(weapon_angle)
+
+        # 武器中心相对于手的偏移（让剑柄在手上，剑身向外延伸）
+        offset_x = math.cos(angle_rad) * weapon_half_size
+        offset_y = math.sin(angle_rad) * weapon_half_size
+
+        weapon_center_x = hand_x + offset_x
+        weapon_center_y = hand_y + offset_y
+
+        weapon_rect = rotated_weapon.get_rect(center=(weapon_center_x, weapon_center_y))
+        window.blit(rotated_weapon, weapon_rect)
+    else:
+        # 备用：绘制简单的武器线条（以手为轴心）
+        weapon_length = 22
+        angle_rad = math.radians(weapon_angle)
+        weapon_end_x = hand_x + math.cos(angle_rad) * weapon_length
+        weapon_end_y = hand_y + math.sin(angle_rad) * weapon_length
+        # 剑身
+        pygame.draw.line(window, (192, 192, 192),
+                        (int(hand_x), int(hand_y)),
+                        (int(weapon_end_x), int(weapon_end_y)), 3)
 
     # Draw health packs
     for health_pack in health_packs:
@@ -2193,12 +2089,6 @@ while running:
         text_rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
         window.blit(text, text_rect)
 
-        # 检查复活按键
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                game_over = False
-                respawn_player()
-
         pygame.display.flip()
         clock.tick(60)
         continue
@@ -2220,21 +2110,7 @@ while running:
     pygame.draw.rect(window, hp_color, (10, 28, hp_bar_width * hp_percentage, hp_bar_height))  # 当前血量
     pygame.draw.rect(window, WHITE, (10, 28, hp_bar_width, hp_bar_height), 1)  # 边框
 
-    # 在双人模式下显示第二个玩家的血量
-    if multiplayer_mode:
-        hp2_color = GREEN if player2_hp > player2_max_hp * 0.6 else YELLOW if player2_hp > player2_max_hp * 0.3 else RED
-        hp2_text = font.render(f'P2 生命: {player2_hp}/{player2_max_hp}', True, hp2_color)
-        window.blit(hp2_text, (10, 48))
-
-        # 第二个玩家的生命值条
-        hp2_percentage = player2_hp / player2_max_hp
-        pygame.draw.rect(window, (60, 60, 60), (10, 68, hp_bar_width, hp_bar_height))  # 背景
-        pygame.draw.rect(window, hp2_color, (10, 68, hp_bar_width * hp2_percentage, hp_bar_height))  # 当前血量
-        pygame.draw.rect(window, WHITE, (10, 68, hp_bar_width, hp_bar_height), 1)  # 边框
-
-        level_offset = 88  # 双人模式下的偏移
-    else:
-        level_offset = 48  # 单人模式下的偏移
+    level_offset = 48
 
     # 等级和经验值显示
     level_text = font_small.render(f'等级: {player_level}  经验: {player_exp}/{player_exp_to_next_level}', True, WHITE)
@@ -2253,25 +2129,6 @@ while running:
     weapon_y = exp_bar_y + 14
     weapon_text = font_small.render(f'武器: {player_weapon.name}  攻击: {player_attack}', True, YELLOW)
     window.blit(weapon_text, (10, weapon_y))
-
-    # 在双人模式下显示第二个玩家的等级和武器信息
-    if multiplayer_mode:
-        level2_text = font.render(f'P2 等级: {player2_level}', True, WHITE)
-        exp2_text = font.render(f'P2 经验: {player2_exp}/{player2_exp_to_next_level}', True, WHITE)
-        window.blit(level2_text, (250, level_offset))
-        window.blit(exp2_text, (250, level_offset + 30))
-
-        # 第二个玩家的经验值条
-        exp2_percentage = player2_exp / player2_exp_to_next_level
-        pygame.draw.rect(window, (40, 40, 40), (250, exp_bar_y, exp_bar_width, exp_bar_height))  # 背景
-        pygame.draw.rect(window, GOLD, (250, exp_bar_y, exp_bar_width * exp2_percentage, exp_bar_height))  # 当前经验
-        pygame.draw.rect(window, WHITE, (250, exp_bar_y, exp_bar_width, exp_bar_height), 1)  # 边框
-
-        # 第二个玩家的武器信息
-        weapon2_text = font.render(f'P2 武器: {player2_weapon.name}', True, WHITE)
-        attack2_text = font_small.render(f'P2 攻击: {player2_base_attack} + {player2_weapon.attack_bonus} = {player2_attack}', True, YELLOW)
-        window.blit(weapon2_text, (250, weapon_y))
-        window.blit(attack2_text, (250, weapon_y + 25))
 
     # Draw skill effects
     for effect in skill_effects:
@@ -2301,37 +2158,62 @@ while running:
             print(f"Invalid color value: {color_with_alpha}")
             continue
 
-    # 绘制玩家武器
-    player_weapon.draw(window, player_x + player_size//2, player_y, camera_x, camera_y)
-
     # 优化的技能冷却显示
     y_offset = 100
     skill_title = font_small.render('技能:', True, WHITE)
     window.blit(skill_title, (10, y_offset))
-    y_offset += 16
+    y_offset += 18
 
-    # 技能名称中英对照
-    skill_names_cn = {
-        "Area Attack": "范围攻击",
-        "Heal": "治疗",
-        "Flash": "闪现",
-        "Invincible": "无敌",
-        "Multi Shot": "多重射击"
+    # 技能名称中英对照和详细信息
+    skill_info_cn = {
+        "Area Attack": {
+            "name": "范围攻击",
+            "desc": lambda s: f"伤害:{s['damage']} 范围:{s['range']}"
+        },
+        "Heal": {
+            "name": "治疗",
+            "desc": lambda s: f"恢复:{s['heal']}HP"
+        },
+        "Flash": {
+            "name": "闪现",
+            "desc": lambda s: f"距离:{s['distance']}"
+        },
+        "Invincible": {
+            "name": "无敌",
+            "desc": lambda s: f"持续:{s['duration']//60}秒"
+        },
+        "Multi Shot": {
+            "name": "多重射击",
+            "desc": lambda s: f"伤害:{s['damage']} 子弹:{s['bullet_count']}"
+        }
     }
 
     for skill_name, skill in SKILLS.items():
         # 获取按键名称
         key_name = pygame.key.name(skill["key"]).upper()
-        skill_cn = skill_names_cn.get(skill_name, skill_name)
+        info = skill_info_cn.get(skill_name, {"name": skill_name, "desc": lambda s: ""})
+        skill_cn = info["name"]
+        skill_desc = info["desc"](skill)
+        skill_level = skill.get("level", 1)
 
+        # 显示技能名称、等级和按键
         if player_skills_cooldown[skill_name] > 0:
             cooldown_seconds = player_skills_cooldown[skill_name] // 60 + 1
-            cooldown_text = FONT_TINY.render(f'[{key_name}] {skill_cn}: {cooldown_seconds}秒', True, RED)
+            status_text = f'{cooldown_seconds}秒'
+            status_color = RED
         else:
-            cooldown_text = FONT_TINY.render(f'[{key_name}] {skill_cn}: 就绪', True, GREEN)
+            status_text = '就绪'
+            status_color = GREEN
 
-        window.blit(cooldown_text, (10, y_offset))
-        y_offset += 15
+        # 第一行：按键、名称、等级、状态
+        line1 = FONT_TINY.render(f'[{key_name}] {skill_cn} Lv{skill_level}: {status_text}', True, status_color)
+        window.blit(line1, (10, y_offset))
+        y_offset += 14
+
+        # 第二行：技能详情（较小字体，灰色）
+        line2 = FONT_TINY.render(f'    {skill_desc}', True, (180, 180, 180))
+        window.blit(line2, (10, y_offset))
+        y_offset += 16
 
     # 冲刺冷却显示
     if player_dash_cooldown > 0:
@@ -2339,43 +2221,75 @@ while running:
     else:
         dash_text = FONT_TINY.render('[SHIFT] 冲刺: 就绪', True, GREEN)
     window.blit(dash_text, (10, y_offset))
-    y_offset += 18
+    y_offset += 16
 
-    # 小地图显示（右上角）
-    minimap_size = 150
+    # 其他技能/功能显示
+    other_skills = [
+        {"key": "Q", "name": "滑动攻击", "desc": "向鼠标方向滑动攻击"},
+        {"key": "M", "name": "加强", "desc": "攻击+10 速度+2 防御+5"},
+        {"key": "L", "name": "穿墙", "desc": f"当前:{'开启' if no_clip_mode else '关闭'}"},
+        {"key": "H", "name": "作弊", "desc": "回血+经验+升级"},
+        {"key": "O", "name": "升级武器", "desc": "提升武器等级"},
+        {"key": "K", "name": "降级武器", "desc": "降低武器等级"},
+        {"key": "U", "name": "升级技能", "desc": f"消耗{SKILL_UPGRADE_COST}经验"},
+    ]
+
+    for skill in other_skills:
+        line = FONT_TINY.render(f"[{skill['key']}] {skill['name']}: {skill['desc']}", True, (200, 200, 200))
+        window.blit(line, (10, y_offset))
+        y_offset += 15
+
+    # 小地图显示（右上角）- 显示玩家周围区域
+    minimap_size = 120
     minimap_x = WINDOW_WIDTH - minimap_size - 10
     minimap_y = 10
-    
-    # 绘制小地图背景
-    pygame.draw.rect(window, (0, 0, 0, 180), (minimap_x, minimap_y, minimap_size, minimap_size))
-    pygame.draw.rect(window, WHITE, (minimap_x, minimap_y, minimap_size, minimap_size), 2)
-    
-    # 计算缩放比例
-    scale_x = minimap_size / GAME_WIDTH
-    scale_y = minimap_size / GAME_HEIGHT
-    
-    # 绘制玩家在小地图上的位置
-    player_minimap_x = minimap_x + int(player_x * scale_x)
-    player_minimap_y = minimap_y + int(player_y * scale_y)
-    pygame.draw.circle(window, YELLOW, (player_minimap_x, player_minimap_y), 3)
-    
-    # 绘制怪物在小地图上的位置
-    for monster in monsters[:10]:  # 只显示前10个怪物避免过于杂乱
-        if monster.is_alive:
-            monster_minimap_x = minimap_x + int(monster.x * scale_x)
-            monster_minimap_y = minimap_y + int(monster.y * scale_y)
-            color = RED if monster.is_boss else PURPLE
-            pygame.draw.circle(window, color, (monster_minimap_x, monster_minimap_y), 2 if monster.is_boss else 1)
+    minimap_range = 800  # 小地图显示的实际游戏范围（像素）
 
-    # Draw movement trail
-    trail_alpha = max(0, min(255, int(100 * (speed / player_max_speed))))
-    if trail_alpha > 0:  # 只在有明显果时绘制
-        trail_surface = pygame.Surface((player_size, player_size), pygame.SRCALPHA)
-        pygame.draw.circle(trail_surface, (YELLOW[0], YELLOW[1], YELLOW[2], trail_alpha),
-                         (player_size//2, player_size//2), player_size//3)
-        window.blit(trail_surface,
-                   (player_x - camera_x - player_velocity_x - player_size//2,
-                    player_y - camera_y - player_velocity_y - player_size//2))
+    # 创建小地图表面
+    minimap_surface = pygame.Surface((minimap_size, minimap_size), pygame.SRCALPHA)
+    minimap_surface.fill((20, 20, 30, 200))  # 半透明深色背景
+
+    # 计算小地图显示区域（以玩家为中心）
+    map_left = player_x - minimap_range // 2
+    map_top = player_y - minimap_range // 2
+    scale = minimap_size / minimap_range
+
+    # 绘制迷宫墙壁（简化显示）
+    wall_start_x = max(0, int(map_left // CELL_SIZE))
+    wall_end_x = min(MAZE_WIDTH, int((map_left + minimap_range) // CELL_SIZE) + 1)
+    wall_start_y = max(0, int(map_top // CELL_SIZE))
+    wall_end_y = min(MAZE_HEIGHT, int((map_top + minimap_range) // CELL_SIZE) + 1)
+
+    for y in range(wall_start_y, wall_end_y):
+        for x in range(wall_start_x, wall_end_x):
+            if maze[y][x] == 1:  # 墙壁
+                wall_screen_x = int((x * CELL_SIZE - map_left) * scale)
+                wall_screen_y = int((y * CELL_SIZE - map_top) * scale)
+                wall_size = max(2, int(CELL_SIZE * scale))
+                if 0 <= wall_screen_x < minimap_size and 0 <= wall_screen_y < minimap_size:
+                    pygame.draw.rect(minimap_surface, (60, 60, 80),
+                                   (wall_screen_x, wall_screen_y, wall_size, wall_size))
+
+    # 绘制怪物（显示范围内的所有怪物）
+    for monster in monsters:
+        if monster.is_alive:
+            mx = int((monster.x - map_left) * scale)
+            my = int((monster.y - map_top) * scale)
+            if 0 <= mx < minimap_size and 0 <= my < minimap_size:
+                color = (255, 100, 100) if monster.is_boss else (255, 80, 80)
+                size = 3 if monster.is_boss else 2
+                pygame.draw.circle(minimap_surface, color, (mx, my), size)
+
+    # 绘制玩家（始终在中心）
+    player_mx = minimap_size // 2
+    player_my = minimap_size // 2
+    pygame.draw.circle(minimap_surface, (100, 255, 100), (player_mx, player_my), 4)
+    pygame.draw.circle(minimap_surface, WHITE, (player_mx, player_my), 4, 1)
+
+    # 绘制小地图到窗口
+    window.blit(minimap_surface, (minimap_x, minimap_y))
+    pygame.draw.rect(window, (100, 100, 120), (minimap_x, minimap_y, minimap_size, minimap_size), 2)
+
 
     # 绘制对话
     player_monster_dialogue.draw(window)
@@ -2393,7 +2307,7 @@ while running:
     window.blit(status_text, (10, status_y))
 
     # 攻击控制说明
-    attack_text = FONT_TINY.render("左键:近战 | X:射击 | M:加强", True, WHITE)
+    attack_text = FONT_TINY.render("左键:近战 | M:加强", True, WHITE)
     window.blit(attack_text, (10, status_y + 16))
 
     # 游戏统计信息
@@ -2410,13 +2324,6 @@ while running:
         if player_hit_timer == 0:
             player_is_hit = False
     
-    # 在双人模式下更新第二个玩家的受伤计时器
-    if multiplayer_mode:
-        if player2_hit_timer > 0:
-            player2_hit_timer -= 1
-            if player2_hit_timer == 0:
-                player2_is_hit = False
-
     # 更新粒子系统
     particle_system.update()
 
