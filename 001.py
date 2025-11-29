@@ -1719,7 +1719,42 @@ while running:
         # 技能触发检测
         for skill_name, skill in SKILLS.items():
             if keys[skill["key"]] and player_skills_cooldown[skill_name] <= 0:
-                if skill_name == "Heal":
+                if skill_name == "Area Attack":
+                    # 范围攻击 - 触发挥剑效果
+                    weapon_is_swinging = True
+                    weapon_swing_timer = WEAPON_SWING_DURATION
+
+                    # 对范围内敌人造成伤害
+                    attack_range = skill["range"]
+                    for monster in monsters:
+                        if monster.is_alive:
+                            distance = ((player_x - monster.x) ** 2 + (player_y - monster.y) ** 2) ** 0.5
+                            if distance <= attack_range:
+                                monster.take_damage(skill["damage"])
+                                # 添加攻击特效
+                                for _ in range(10):
+                                    angle = random.uniform(0, math.pi * 2)
+                                    particle_system.add_particle(
+                                        monster.x + random.uniform(-10, 10),
+                                        monster.y + random.uniform(-10, 10),
+                                        (255, 255, 100, 200),
+                                        math.cos(angle) * 2,
+                                        math.sin(angle) * 2,
+                                        20, 3, 0.9, 0
+                                    )
+                                if not monster.is_alive:
+                                    player_exp += monster.exp_reward
+
+                    # 添加范围攻击视觉效果
+                    skill_effects.append({
+                        "x": player_x,
+                        "y": player_y,
+                        "range": attack_range,
+                        "color": skill["color"],
+                        "timer": 15
+                    })
+
+                elif skill_name == "Heal":
                     # 治疗效果
                     player_hp = min(player_hp + skill["heal"], player_max_hp)
                     # 添加治疗粒子效果
@@ -1985,37 +2020,49 @@ while running:
     facing_left = player_direction == "left" or player_direction == "up"  # 上也算左
 
     # 手的位置（紧贴角色边缘）
-    hand_offset_x = player_size // 2 - 5  # 手在角色边缘内侧一点
-    hand_offset_y = 3  # 手稍微偏下
+    hand_offset_x = player_size // 2 - 10  # 手在角色边缘内侧
+    hand_offset_y = 2  # 手稍微偏下
 
     if facing_left:
         hand_x = screen_player_x - hand_offset_x
         hand_y = screen_player_y + hand_offset_y
-        weapon_angle = 180 - weapon_swing_angle  # 朝左挥动
     else:
         hand_x = screen_player_x + hand_offset_x
         hand_y = screen_player_y + hand_offset_y
-        weapon_angle = weapon_swing_angle  # 朝右挥动
+
+    # 武器参数
+    weapon_half_size = 16  # 武器图片一半大小
+    default_angle = -45  # 默认向上倾斜45度（朝右时为右上，即指向右上方）
+
+    # 朝右时的角度计算（基准）
+    # actual_angle: 剑指向的实际角度（从手出发）
+    # 默认-45度（右上），挥动时从+15度到-105度
+    right_actual_angle = default_angle + weapon_swing_angle
 
     if weapon_image_original:
-        # 准备武器图片
         if facing_left:
+            # 朝左：完全镜像朝右的效果
+            # 水平镜像图片
             weapon_img = pygame.transform.flip(weapon_image_original, True, False)
-            rot_angle = -weapon_angle + 180 - 45
+            # 镜像角度计算：X轴镜像，角度变为 180 - angle
+            # 朝右-45度（右上） -> 朝左225度（左上） = 180 - (-45) = 225
+            actual_angle = 180 - right_actual_angle
+            # 图片旋转角度：因为图片已经水平翻转，需要调整旋转
+            # 原始图片假设剑尖朝右下(-45度方向)，翻转后剑尖朝左下
+            # 要让翻转后的剑指向actual_angle方向
+            rot_angle = -(actual_angle - 180) - 45
         else:
+            # 朝右
             weapon_img = weapon_image_original
-            rot_angle = -weapon_angle - 45
+            actual_angle = right_actual_angle
+            # 原始图片剑尖朝右下，旋转使其指向actual_angle
+            rot_angle = -actual_angle - 45
 
         # 旋转武器
         rotated_weapon = pygame.transform.rotate(weapon_img, rot_angle)
 
-        # 计算旋转后剑柄的位置偏移
-        # 原图中剑柄在图片中心，剑尖延伸出去
-        # 旋转后需要调整位置，让剑柄固定在手的位置
-        weapon_half_size = 16  # 武器图片一半大小
-        angle_rad = math.radians(weapon_angle)
-
         # 武器中心相对于手的偏移（让剑柄在手上，剑身向外延伸）
+        angle_rad = math.radians(actual_angle)
         offset_x = math.cos(angle_rad) * weapon_half_size
         offset_y = math.sin(angle_rad) * weapon_half_size
 
@@ -2027,7 +2074,11 @@ while running:
     else:
         # 备用：绘制简单的武器线条（以手为轴心）
         weapon_length = 22
-        angle_rad = math.radians(weapon_angle)
+        if facing_left:
+            actual_angle = 180 - right_actual_angle
+        else:
+            actual_angle = right_actual_angle
+        angle_rad = math.radians(actual_angle)
         weapon_end_x = hand_x + math.cos(angle_rad) * weapon_length
         weapon_end_y = hand_y + math.sin(angle_rad) * weapon_length
         # 剑身
