@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller 打包配置文件
+# PyInstaller 打包配置文件 - 迷宫大冒险
 
 import sys
 import os
@@ -13,15 +13,29 @@ current_dir = os.path.dirname(os.path.abspath(SPEC))
 datas = [
     ('中国球.png', '.'),
     ('铁剑.png', '.'),
+    ('logo.png', '.'),  # 窗口图标
     ('STHeiti Light.ttc', '.'),
     ('graphics_enhancement.py', '.'),
+    ('images', 'images'),  # 怪物图片目录
 ]
 
-# 过滤掉不存在的文件
+# 过滤掉不存在的文件和目录
 datas = [(src, dst) for src, dst in datas if os.path.exists(os.path.join(current_dir, src))]
 
+# 根据平台选择图标文件
+if sys.platform == 'win32':
+    icon_file = 'logo.ico'
+elif sys.platform == 'darwin':
+    icon_file = 'logo.icns'
+else:
+    icon_file = None
+
+# 检查图标文件是否存在
+if icon_file and not os.path.exists(os.path.join(current_dir, icon_file)):
+    icon_file = None
+
 a = Analysis(
-    ['001.py'],
+    ['main.py'],
     pathex=[current_dir],
     binaries=[],
     datas=datas,
@@ -38,41 +52,53 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# 使用 onedir 模式（不合并到单个文件）
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name='DungeonExplorer',
+    [],  # 不包含 binaries, zipfiles, datas - 这些放在 COLLECT 中
+    exclude_binaries=True,  # 关键：启用 onedir 模式
+    name='迷宫大冒险',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # 不显示控制台窗口
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # 可以在这里指定图标文件 icon='icon.ico' (Windows) 或 icon='icon.icns' (macOS)
+    icon=icon_file,  # 可执行文件图标
+)
+
+# 收集所有文件到一个目录
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='迷宫大冒险',
 )
 
 # macOS 专用：创建 .app 包
 if sys.platform == 'darwin':
     app = BUNDLE(
-        exe,
-        name='DungeonExplorer.app',
-        icon=None,  # 可以指定 .icns 图标
-        bundle_identifier='com.dungeon.explorer',
+        coll,
+        name='迷宫大冒险.app',
+        icon='logo.icns',
+        bundle_identifier='com.maze.adventure',
         info_plist={
-            'CFBundleName': 'Dungeon Explorer',
-            'CFBundleDisplayName': 'Dungeon Explorer',
+            'CFBundleName': '迷宫大冒险',
+            'CFBundleDisplayName': '迷宫大冒险',
             'CFBundleVersion': '1.0.0',
             'CFBundleShortVersionString': '1.0.0',
             'NSHighResolutionCapable': True,
+            'LSMinimumSystemVersion': '10.13.0',
         },
     )
