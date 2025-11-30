@@ -1,0 +1,3 @@
+([('DungeonExplorer',
+   '/Users/wangxin/Downloads/py/dist/DungeonExplorer',
+   'EXECUTABLE')],)

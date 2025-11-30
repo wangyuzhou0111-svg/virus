@@ -266,7 +266,7 @@ class Monster:
     def draw(self, window, camera_x, camera_y):
         if not self.is_alive:
             return
-            
+
         # 优化的视野剖除检查
         screen_x = self.x - camera_x
         screen_y = self.y - camera_y
@@ -279,34 +279,41 @@ class Monster:
         if not hasattr(self, '_shadow_surface'):
             # 预计算阴影表面
             self._shadow_surface = pygame.Surface((self.size, self.size//2), pygame.SRCALPHA)
-            pygame.draw.ellipse(self._shadow_surface, (0, 0, 0, 100), 
+            pygame.draw.ellipse(self._shadow_surface, (0, 0, 0, 100),
                               (0, 0, self.size, self.size//2))
-        
+
         # 绘制阴影
         window.blit(self._shadow_surface,
                    (screen_x - self.size//2, screen_y + self.size//4))
-        
+
         # 优化：根据怪物类型预渲染怪物表面
         if not hasattr(self, '_monster_surface'):
-            self._monster_surface = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
-            
-            # 创建渐变效果
-            for i in range(self.size//2, 0, -2):  # 步长加2优化性能
-                alpha = max(50, 255 - (self.size//2 - i) * 8)  # 优化alpha计算
-                color = [max(0, min(255, c)) for c in self.color]
-                pygame.draw.circle(self._monster_surface, (*color, alpha),
-                                 (self.size//2, self.size//2), i)
-            
-            # 高光效果
-            highlight_size = self.size//4
-            highlight = pygame.Surface((highlight_size, highlight_size), pygame.SRCALPHA)
-            pygame.draw.circle(highlight, (255, 255, 255, 150),
-                             (highlight_size//2, highlight_size//2), highlight_size//2)
-            self._monster_surface.blit(highlight, (self.size//4, self.size//4))
-        
+            # 尝试使用图片
+            monster_img = MONSTER_IMAGES.get(self.name)
+            if monster_img is not None:
+                # 使用图片，缩放到怪物大小
+                self._monster_surface = pygame.transform.scale(monster_img, (self.size, self.size))
+            else:
+                # 回退到默认的圆形渲染
+                self._monster_surface = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+
+                # 创建渐变效果
+                for i in range(self.size//2, 0, -2):  # 步长加2优化性能
+                    alpha = max(50, 255 - (self.size//2 - i) * 8)  # 优化alpha计算
+                    color = [max(0, min(255, c)) for c in self.color]
+                    pygame.draw.circle(self._monster_surface, (*color, alpha),
+                                     (self.size//2, self.size//2), i)
+
+                # 高光效果
+                highlight_size = self.size//4
+                highlight = pygame.Surface((highlight_size, highlight_size), pygame.SRCALPHA)
+                pygame.draw.circle(highlight, (255, 255, 255, 150),
+                                 (highlight_size//2, highlight_size//2), highlight_size//2)
+                self._monster_surface.blit(highlight, (self.size//4, self.size//4))
+
         window.blit(self._monster_surface,
                    (screen_x - self.size//2, screen_y - self.size//2))
-                    
+
         # 优化的血条绘制
         self._draw_health_bar(window, screen_x, screen_y)
     
@@ -751,6 +758,23 @@ try:
 except (pygame.error, FileNotFoundError):
     print("警告：无法加载 铁剑.png，将使用默认的武器形状")
     weapon_image_original = None
+
+# 加载怪物图片
+MONSTER_IMAGES = {}
+MONSTER_IMAGE_NAMES = [
+    "Goblin", "Orc", "Skeleton", "Slime", "Troll",
+    "Ghost", "Bat", "Stone Golem", "Shadow Assassin", "Fire Spirit",
+    "Dragon", "Demon Lord"
+]
+for monster_name in MONSTER_IMAGE_NAMES:
+    try:
+        img_path = f"images/{monster_name}.png"
+        img = pygame.image.load(img_path).convert_alpha()
+        MONSTER_IMAGES[monster_name] = img
+        print(f"已加载怪物图片: {monster_name}")
+    except (pygame.error, FileNotFoundError):
+        print(f"警告：无法加载 {img_path}，将使用默认图形")
+        MONSTER_IMAGES[monster_name] = None
 
 # 玩家朝向和武器攻击相关变量
 player_facing_angle = 0  # 玩家朝向角度（弧度）
