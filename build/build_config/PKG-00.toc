@@ -1,4 +1,4 @@
-('/Users/wangxin/Downloads/py/build/build_config/迷宫大冒险.pkg',
+('/Users/wangxin/Downloads/py/build/build_config/免疫大作战.pkg',
  {'BINARY': True,
   'DATA': True,
   'EXECUTABLE': True,

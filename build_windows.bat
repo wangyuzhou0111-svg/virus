@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-echo === 迷宫大冒险 Windows 打包脚本 ===
+echo === 免疫大作战 Windows 打包脚本 ===
 echo.
 
 :: 检查 Python
@@ -29,19 +29,19 @@ echo [3/3] 开始打包...
 pyinstaller --clean build_config.spec
 
 :: 检查结果
-if exist "dist\迷宫大冒险\迷宫大冒险.exe" (
+if exist "dist\免疫大作战\免疫大作战.exe" (
     echo.
     echo ============================================
     echo           打包成功!
     echo ============================================
     echo.
-    echo 游戏位置: dist\迷宫大冒险\迷宫大冒险.exe
+    echo 游戏位置: dist\免疫大作战\免疫大作战.exe
     echo.
     echo 你可以:
-    echo   1. 双击运行 dist\迷宫大冒险\迷宫大冒险.exe
-    echo   2. 将整个 dist\迷宫大冒险 文件夹复制给其他人
+    echo   1. 双击运行 dist\免疫大作战\免疫大作战.exe
+    echo   2. 将整个 dist\免疫大作战 文件夹复制给其他人
     echo.
-    explorer "dist\迷宫大冒险"
+    explorer "dist\免疫大作战"
 ) else (
     echo.
     echo 打包失败，请检查错误信息

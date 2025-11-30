@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller 打包配置文件 - 迷宫大冒险
+# PyInstaller 打包配置文件 - 免疫大作战
 
 import sys
 import os
@@ -16,7 +16,7 @@ datas = [
     ('logo.png', '.'),  # 窗口图标
     ('STHeiti Light.ttc', '.'),
     ('graphics_enhancement.py', '.'),
-    ('images', 'images'),  # 怪物图片目录
+    ('images', 'images'),  # 病毒图片目录
 ]
 
 # 过滤掉不存在的文件和目录
@@ -58,7 +58,7 @@ exe = EXE(
     a.scripts,
     [],  # 不包含 binaries, zipfiles, datas - 这些放在 COLLECT 中
     exclude_binaries=True,  # 关键：启用 onedir 模式
-    name='迷宫大冒险',
+    name='免疫大作战',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -83,19 +83,19 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='迷宫大冒险',
+    name='免疫大作战',
 )
 
 # macOS 专用：创建 .app 包
 if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
-        name='迷宫大冒险.app',
+        name='免疫大作战.app',
         icon='logo.icns',
-        bundle_identifier='com.maze.adventure',
+        bundle_identifier='com.immune.battle',
         info_plist={
-            'CFBundleName': '迷宫大冒险',
-            'CFBundleDisplayName': '迷宫大冒险',
+            'CFBundleName': '免疫大作战',
+            'CFBundleDisplayName': '免疫大作战',
             'CFBundleVersion': '1.0.0',
             'CFBundleShortVersionString': '1.0.0',
             'NSHighResolutionCapable': True,

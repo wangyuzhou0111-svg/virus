@@ -42,7 +42,7 @@ pygame.key.stop_text_input()
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 1000
 window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption("迷宫大冒险")
+pygame.display.set_caption("免疫大作战")
 
 # 设置窗口图标（任务栏图标）
 try:
@@ -92,7 +92,7 @@ PURPLE = (128, 12, 128)  # 哥布林
 BROWN = (165, 70, 42)   # 兽人
 GRAY = (128, 128, 128)  # 骷髅
 ORANGE = (255, 165, 21)  # 史莱姆
-GOLD = (255, 215, 0)  # 经验值颜色
+GOLD = (255, 215, 0)  # 免疫力颜色
 PINK = (255, 2, 2)  # 回血包颜色
 WALL_GRADIENT = [(0, 0, 150), (0, 0, 200)]  # 墙壁渐变色
 PLAYER_GLOW = (255, 255, 100)  # 玩家光晕颜色
@@ -119,8 +119,8 @@ GAME_WIDTH = MAZE_WIDTH * CELL_SIZE
 GAME_HEIGHT = MAZE_HEIGHT * CELL_SIZE
 
 # 在全局变量区域添加这些量（根据用户记忆优化）
-MAX_MONSTERS = 150 # 设置最大怪物数量（用户要求调整为150个）
-MIN_MONSTERS = 20   # 最小怪物数量（相应调整）
+MAX_MONSTERS = 300 # 设置最大病毒数量（翻倍）
+MIN_MONSTERS = 40   # 最小病毒数量（翻倍）
 MONSTER_SPAWN_COOLDOWN = 180  # 刷新冷却时间（180帧，约3秒）
 MAX_HEALTH_PACKS = 40   # 场上最大回血包数量
 HEALTH_PACK_SPAWN_COOLDOWN = 100  # 回血包刷新冷却时间（?秒）
@@ -130,15 +130,15 @@ HEALTH_RESTORE_AMOUNT = 20  # 回血包恢复量
 DIFFICULTY_SCORE_THRESHOLD = 1000  # 每1000分增加一次难度
 
 # 在全局变量区域添加技能相关常量
-SKILL_UPGRADE_COST = 500  # 技能升级所需经验值
+SKILL_UPGRADE_COST = 500  # 技能升级所需免疫力
 
 SKILLS = {
     "Area Attack": {
         "key": pygame.K_SPACE,
         "damage": 50,
         "range": 200,
-        "cooldown": 6,  # 0.1秒 (6帧 ÷ 60帧/秒 = 0.1秒)
-        "color": YELLOW,  # 直接使用已定义的颜色常量 
+        "cooldown": 600,  # 10秒 (600帧 ÷ 60帧/秒 = 10秒)
+        "color": YELLOW,  # 直接使用已定义的颜色常量
         "description": "Damage nearby enemies",
         "level": 1  # 初始等级
     },
@@ -177,23 +177,23 @@ SKILLS = {
     }
 }
 
-# 在全局变量区域添加Boss类型定义
+# Boss病毒类型定义
 BOSS_TYPES = [
     {
-        "name": "Dragon",
+        "name": "超级流感",
         "hp": 300,
         "attack": 30,
         "defense": 15,
-        "color": (98, 13, 0),  # 红色
+        "color": (180, 30, 30),  # 深红色
         "size_multiplier": 5,  # Boss体型翻倍
-        "exp_multiplier": 10    # 经验值奖励翻10倍
+        "exp_multiplier": 10    # 免疫力奖励翻10倍
     },
     {
-        "name": "Demon Lord",
+        "name": "病毒之王",
         "hp": 250,
         "attack": 35,
         "defense": 12,
-        "color": (214, 98, 211),  
+        "color": (100, 20, 120),  # 紫黑色
         "size_multiplier": 1.8,
         "exp_multiplier": 2.5
     }
@@ -275,7 +275,7 @@ class Monster:
         self.speed = 7 if size_multiplier == 1 else 4  # 提高移动速度
         self.move_cooldown = 0
         self.move_direction = random.choice([(1,0), (-1,0), (0,1), (0,-1)])
-        self.exp_reward = int((hp // 3) * exp_multiplier)  # Boss给更经验
+        self.exp_reward = int((hp // 3) * exp_multiplier)  # Boss给更多免疫力
         self.font = FONT_TINY
         self.is_boss = size_multiplier > 1  # 标记是否为Boss
         
@@ -300,20 +300,20 @@ class Monster:
         if not hasattr(self, '_glow_surface'):
             glow_size = int(self.size * 1.8)
             self._glow_surface = pygame.Surface((glow_size, glow_size), pygame.SRCALPHA)
-            # 根据怪物类型选择光晕颜色
+            # 根据病毒类型选择光晕颜色
             glow_colors = {
-                "Goblin": (100, 255, 100),      # 绿色
-                "Orc": (200, 150, 100),         # 棕色
-                "Skeleton": (200, 200, 255),    # 淡蓝白
-                "Slime": (255, 200, 100),       # 橙黄
-                "Troll": (100, 200, 100),       # 深绿
-                "Ghost": (150, 150, 255),       # 幽蓝
-                "Bat": (180, 180, 200),         # 灰紫
-                "Stone Golem": (200, 200, 200), # 灰白
-                "Shadow Assassin": (180, 100, 255),  # 紫色
-                "Fire Spirit": (255, 150, 50),  # 火焰橙
-                "Dragon": (255, 100, 100),      # 红色
-                "Demon Lord": (255, 100, 255),  # 粉紫
+                "感冒病毒": (100, 255, 100),      # 绿色
+                "流感病毒": (255, 180, 80),       # 橙色
+                "蛀牙细菌": (220, 220, 200),      # 米白色
+                "鼻涕虫菌": (180, 255, 120),      # 黄绿色
+                "肚子疼菌": (180, 120, 80),       # 棕色
+                "熬夜菌": (200, 170, 255),        # 淡紫色
+                "咳嗽病毒": (150, 150, 180),      # 灰蓝色
+                "懒惰菌": (200, 200, 200),        # 灰色
+                "坏情绪菌": (150, 80, 200),       # 紫色
+                "发烧病毒": (255, 120, 80),       # 红橙色
+                "超级流感": (255, 80, 80),        # 红色
+                "病毒之王": (180, 80, 200),       # 紫黑色
             }
             glow_color = glow_colors.get(self.name, (255, 255, 255))
             # 绘制多层渐变光晕
@@ -322,7 +322,7 @@ class Monster:
                 alpha = int(80 * (i / (glow_size // 2)))
                 pygame.draw.circle(self._glow_surface, (*glow_color, alpha), (center, center), i)
 
-        # 绘制底光（在怪物下方）
+        # 绘制底光（在病毒下方）
         glow_size = int(self.size * 1.8)
         window.blit(self._glow_surface,
                    (screen_x - glow_size // 2, screen_y - glow_size // 2))
@@ -337,7 +337,7 @@ class Monster:
         window.blit(self._shadow_surface,
                    (screen_x - self.size//2, screen_y + self.size//4))
 
-        # 预计算带发光边框的怪物表面
+        # 预计算带发光边框的病毒表面
         if not hasattr(self, '_monster_surface'):
             # 尝试使用图片
             monster_img = MONSTER_IMAGES.get(self.name)
@@ -350,18 +350,18 @@ class Monster:
                 self._monster_surface = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
                 # 绘制发光边框（多层实现柔和效果）
                 glow_colors = {
-                    "Goblin": (100, 255, 100),
-                    "Orc": (200, 150, 100),
-                    "Skeleton": (200, 200, 255),
-                    "Slime": (255, 200, 100),
-                    "Troll": (100, 200, 100),
-                    "Ghost": (150, 150, 255),
-                    "Bat": (180, 180, 200),
-                    "Stone Golem": (200, 200, 200),
-                    "Shadow Assassin": (180, 100, 255),
-                    "Fire Spirit": (255, 150, 50),
-                    "Dragon": (255, 100, 100),
-                    "Demon Lord": (255, 100, 255),
+                    "感冒病毒": (100, 255, 100),
+                    "流感病毒": (255, 180, 80),
+                    "蛀牙细菌": (220, 220, 200),
+                    "鼻涕虫菌": (180, 255, 120),
+                    "肚子疼菌": (180, 120, 80),
+                    "熬夜菌": (200, 170, 255),
+                    "咳嗽病毒": (150, 150, 180),
+                    "懒惰菌": (200, 200, 200),
+                    "坏情绪菌": (150, 80, 200),
+                    "发烧病毒": (255, 120, 80),
+                    "超级流感": (255, 80, 80),
+                    "病毒之王": (180, 80, 200),
                 }
                 border_color = glow_colors.get(self.name, (255, 255, 255))
                 # 外层光晕
@@ -371,7 +371,7 @@ class Monster:
                            self.size + i * 2, self.size + i * 2)
                     pygame.draw.rect(self._monster_surface, (*border_color, alpha), rect,
                                    border_radius=max(3, self.size // 8))
-                # 绘制怪物图片
+                # 绘制病毒图片
                 self._monster_surface.blit(scaled_img, (border_size, border_size))
                 self._border_offset = border_size
             else:
@@ -393,7 +393,7 @@ class Monster:
                                  (highlight_size//2, highlight_size//2), highlight_size//2)
                 self._monster_surface.blit(highlight, (self.size//4, self.size//4))
 
-        # 绘制怪物
+        # 绘制病毒
         border_offset = getattr(self, '_border_offset', 0)
         window.blit(self._monster_surface,
                    (screen_x - self.size//2 - border_offset,
@@ -487,7 +487,7 @@ class Monster:
 
     def move_towards_player(self, player_x, player_y, maze=None, always_move=True):
         """
-        怪物移动逻辑
+        病毒移动逻辑
         always_move: 是否始终移动（即使不在玩家视野内也自由游荡）
         """
         if not self.is_alive:
@@ -516,7 +516,7 @@ class Monster:
                 dx = dy = 0
         else:
             # 自由游荡模式：即使不在玩家附近也会移动
-            # 增加方向改变频率，让怪物更活跃
+            # 增加方向改变频率，让病毒更活跃
             if random.random() < 0.05:  # 5%的概率改变方向
                 self.move_direction = random.choice([(1,0), (-1,0), (0,1), (0,-1), (1,1), (-1,-1), (1,-1), (-1,1)])
 
@@ -718,17 +718,18 @@ class HealthPack:
 
 def generate_monsters(num_monsters):
     monsters = []
+    # 病毒类型定义
     monster_types = [
-        {"name": "Goblin", "hp": 40, "attack": 12, "defense": 2, "color": PURPLE},
-        {"name": "Orc", "hp": 55, "attack": 15, "defense": 4, "color": BROWN},
-        {"name": "Skeleton", "hp": 35, "attack": 14, "defense": 1, "color": GRAY},
-        {"name": "Slime", "hp": 30, "attack": 10, "defense": 1, "color": ORANGE},
-        {"name": "Troll", "hp": 85, "attack": 18, "defense": 6, "color": (0, 100, 0)},
-        {"name": "Ghost", "hp": 45, "attack": 16, "defense": 0, "color": (200, 200, 255)},
-        {"name": "Bat", "hp": 25, "attack": 8, "defense": 0, "color": (70, 70, 70)},
-        {"name": "Stone Golem", "hp": 99, "attack": 14, "defense": 15, "color": (169, 169, 169)},
-        {"name": "Shadow Assassin", "hp": 50, "attack": 22, "defense": 3, "color": (75, 0, 130)},
-        {"name": "Fire Spirit", "hp": 60, "attack": 20, "defense": 4, "color": (255, 69, 0)}
+        {"name": "感冒病毒", "hp": 40, "attack": 12, "defense": 2, "color": (100, 200, 100)},
+        {"name": "流感病毒", "hp": 55, "attack": 15, "defense": 4, "color": (255, 150, 50)},
+        {"name": "蛀牙细菌", "hp": 35, "attack": 14, "defense": 1, "color": (200, 200, 180)},
+        {"name": "鼻涕虫菌", "hp": 30, "attack": 10, "defense": 1, "color": (180, 220, 100)},
+        {"name": "肚子疼菌", "hp": 85, "attack": 18, "defense": 6, "color": (139, 90, 43)},
+        {"name": "熬夜菌", "hp": 45, "attack": 16, "defense": 0, "color": (180, 150, 220)},
+        {"name": "咳嗽病毒", "hp": 25, "attack": 8, "defense": 0, "color": (100, 100, 120)},
+        {"name": "懒惰菌", "hp": 99, "attack": 14, "defense": 15, "color": (169, 169, 169)},
+        {"name": "坏情绪菌", "hp": 50, "attack": 22, "defense": 3, "color": (100, 50, 150)},
+        {"name": "发烧病毒", "hp": 60, "attack": 20, "defense": 4, "color": (255, 80, 50)}
     ]
 
     def check_monster_collision(x, y, size, existing_monsters):
@@ -844,19 +845,19 @@ except (pygame.error, FileNotFoundError):
     print("警告：无法加载 铁剑.png，将使用默认的武器形状")
     weapon_image_original = None
 
-# 加载怪物图片
+# 加载病毒图片
 MONSTER_IMAGES = {}
 MONSTER_IMAGE_NAMES = [
-    "Goblin", "Orc", "Skeleton", "Slime", "Troll",
-    "Ghost", "Bat", "Stone Golem", "Shadow Assassin", "Fire Spirit",
-    "Dragon", "Demon Lord"
+    "感冒病毒", "流感病毒", "蛀牙细菌", "鼻涕虫菌", "肚子疼菌",
+    "熬夜菌", "咳嗽病毒", "懒惰菌", "坏情绪菌", "发烧病毒",
+    "超级流感", "病毒之王"
 ]
 for monster_name in MONSTER_IMAGE_NAMES:
     try:
         img_path = resource_path(f"images/{monster_name}.png")
         img = pygame.image.load(img_path).convert_alpha()
         MONSTER_IMAGES[monster_name] = img
-        print(f"已加载怪物图片: {monster_name}")
+        print(f"已加载病毒图片: {monster_name}")
     except (pygame.error, FileNotFoundError):
         print(f"警告：无法加载 images/{monster_name}.png，将使用默认图形")
         MONSTER_IMAGES[monster_name] = None
@@ -911,7 +912,7 @@ is_dashing = False  # 初始化冲刺状态
 # Game state
 game_won = False
 game_over = False
-monsters = generate_monsters(30)  # 调整初始怪物数量以30个
+monsters = generate_monsters(60)  # 调整初始病毒数量为60个（翻倍）
 combat_cooldown = 0
 COMBAT_COOLDOWN_MAX = 30  # 战斗冷却时间（帧数）
 monster_spawn_timer = 0
@@ -1090,16 +1091,16 @@ player_bullets = []
 
 # 在文件顶部定义关卡数据
 LEVELS = {
-    1: {"monster_count": 80, "boss": False},
-    2: {"monster_count": 100, "boss": False},
-    3: {"monster_count": 120, "boss": True},
-    4: {"monster_count": 150, "boss": False},
-    5: {"monster_count": 180, "boss": True},
-    6: {"monster_count": 200, "boss": False},
-    7: {"monster_count": 250, "boss": True},
-    8: {"monster_count": 300, "boss": False},
-    9: {"monster_count": 350, "boss": True},
-    10: {"monster_count": 400, "boss": True}
+    1: {"monster_count": 160, "boss": False},   # 翻倍
+    2: {"monster_count": 200, "boss": False},   # 翻倍
+    3: {"monster_count": 240, "boss": True},    # 翻倍
+    4: {"monster_count": 300, "boss": False},   # 翻倍
+    5: {"monster_count": 360, "boss": True},    # 翻倍
+    6: {"monster_count": 400, "boss": False},   # 翻倍
+    7: {"monster_count": 500, "boss": True},    # 翻倍
+    8: {"monster_count": 600, "boss": False},   # 翻倍
+    9: {"monster_count": 700, "boss": True},    # 翻倍
+    10: {"monster_count": 800, "boss": True}    # 翻倍
 }
 
 current_level_index = 1  # 当前关卡索引，从1开始
@@ -1188,7 +1189,7 @@ class Shop:
         y_offset = shop_y + 50
         item_index = 1
         for item_name, item_info in self.items.items():
-            item_text = f"[{item_index}] {item_name}: {item_info['cost']} 经验"
+            item_text = f"[{item_index}] {item_name}: {item_info['cost']} 免疫力"
             desc_text = f"    {item_info['description']}"
 
             color = GREEN if player_exp >= item_info['cost'] else RED
@@ -1230,10 +1231,10 @@ class Shop:
 player_monster_dialogue = Dialogue()
 
 # 示例对话内容
-player_monster_dialogue.add_message("你遇到了一个怪物！")
-player_monster_dialogue.add_message("准备战斗吧！")
+player_monster_dialogue.add_message("发现病毒入侵！")
+player_monster_dialogue.add_message("准备消灭它们！")
 
-# 在适当的地方启动对话，例如在玩家接近怪物时
+# 在适当的地方启动对话，例如在玩家接近病毒时
 for monster in monsters:
     if monster.check_collision(player_x, player_y, player_size):
         player_monster_dialogue.start()
@@ -1515,7 +1516,7 @@ while running:
             elif event.key == pygame.K_u:  # 按U键升级技能
                 for skill_name, skill in SKILLS.items():
                     if player_exp >= SKILL_UPGRADE_COST and skill["level"] < 3:  # 假设技能最多升级到3级
-                        player_exp -= SKILL_UPGRADE_COST  # 扣除经验值
+                        player_exp -= SKILL_UPGRADE_COST  # 扣除免疫力
                         skill["level"] += 1  # 提升技能等级
                         # 根据技能类型调整效果
                         if skill_name == "Area Attack":
@@ -1538,17 +1539,17 @@ while running:
                 if shop.buy_item("Health Pack"):
                     print("购买成功：健康包")
                 else:
-                    print("购买失败：经验不足")
+                    print("购买失败：免疫力不足")
             elif event.key == pygame.K_2 and shop.is_open:  # 在商店中按键购买铁剑
                 if shop.buy_item("Iron Sword"):
                     print("购买成功：铁剑")
                 else:
-                    print("购买失败：经验不足或已拥有更高级武器")
+                    print("购买失败：免疫力不足或已拥有更高级武器")
             elif event.key == pygame.K_3 and shop.is_open:  # 在商店中按键购买钢剑
                 if shop.buy_item("Steel Sword"):
                     print("购买成功：钢剑")
                 else:
-                    print("购买失败：经验不足或已拥有更高级武器")
+                    print("购买失败：免疫力不足或已拥有更高级武器")
         
         # 鼠标事件处理
         elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -2272,17 +2273,17 @@ while running:
 
     level_offset = 48
 
-    # 等级和经验值显示
-    level_text = font_small.render(f'等级: {player_level}  经验: {player_exp}/{player_exp_to_next_level}', True, WHITE)
+    # 等级和免疫力显示
+    level_text = font_small.render(f'等级: {player_level}  免疫力: {player_exp}/{player_exp_to_next_level}', True, WHITE)
     window.blit(level_text, (10, level_offset))
 
-    # 经验值条
+    # 免疫力条
     exp_bar_width = 150
     exp_bar_height = 8
     exp_percentage = player_exp / player_exp_to_next_level
     exp_bar_y = level_offset + 18
     pygame.draw.rect(window, (40, 40, 40), (10, exp_bar_y, exp_bar_width, exp_bar_height))  # 背景
-    pygame.draw.rect(window, GOLD, (10, exp_bar_y, exp_bar_width * exp_percentage, exp_bar_height))  # 当前经验
+    pygame.draw.rect(window, GOLD, (10, exp_bar_y, exp_bar_width * exp_percentage, exp_bar_height))  # 当前免疫力
     pygame.draw.rect(window, WHITE, (10, exp_bar_y, exp_bar_width, exp_bar_height), 1)  # 边框
 
     # 武器信息
@@ -2388,10 +2389,10 @@ while running:
         {"key": "Q", "name": "滑动攻击", "desc": "向鼠标方向滑动攻击"},
         {"key": "M", "name": "加强", "desc": "攻击+10 速度+2 防御+5"},
         {"key": "L", "name": "穿墙", "desc": f"当前:{'开启' if no_clip_mode else '关闭'}"},
-        {"key": "H", "name": "作弊", "desc": "回血+经验+升级"},
+        {"key": "H", "name": "作弊", "desc": "回血+免疫力+升级"},
         {"key": "O", "name": "升级武器", "desc": "提升武器等级"},
         {"key": "K", "name": "降级武器", "desc": "降低武器等级"},
-        {"key": "U", "name": "升级技能", "desc": f"消耗{SKILL_UPGRADE_COST}经验"},
+        {"key": "U", "name": "升级技能", "desc": f"消耗{SKILL_UPGRADE_COST}免疫力"},
     ]
 
     for skill in other_skills:
@@ -2472,8 +2473,123 @@ while running:
 
     # 游戏统计信息
     alive_monsters = len([m for m in monsters if m.is_alive])
-    stats_text = FONT_TINY.render(f"怪物: {alive_monsters}/{MAX_MONSTERS} | 关卡: {current_level_index}", True, GOLD)
+    stats_text = FONT_TINY.render(f"病毒: {alive_monsters}/{MAX_MONSTERS} | 关卡: {current_level_index}", True, GOLD)
     window.blit(stats_text, (10, status_y + 32))
+
+    # ========== 右下角病毒统计面板 ==========
+    # 统计各类病毒数量
+    virus_counts = {}
+    boss_counts = {}
+    for monster in monsters:
+        if monster.is_alive:
+            if monster.is_boss:
+                boss_counts[monster.name] = boss_counts.get(monster.name, 0) + 1
+            else:
+                virus_counts[monster.name] = virus_counts.get(monster.name, 0) + 1
+
+    # 面板尺寸和位置
+    panel_width = 180
+    panel_height = 200
+    panel_x = WINDOW_WIDTH - panel_width - 15
+    panel_y = WINDOW_HEIGHT - panel_height - 15
+
+    # 绘制半透明背景面板
+    panel_surface = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+    # 渐变背景效果
+    for i in range(panel_height):
+        alpha = int(180 - i * 0.3)
+        pygame.draw.line(panel_surface, (20, 30, 50, alpha), (0, i), (panel_width, i))
+
+    # 绘制发光边框
+    pygame.draw.rect(panel_surface, (100, 200, 255, 150), (0, 0, panel_width, panel_height), 2, border_radius=8)
+    pygame.draw.rect(panel_surface, (50, 150, 200, 80), (1, 1, panel_width-2, panel_height-2), 1, border_radius=7)
+
+    # 标题栏
+    title_rect = pygame.Rect(0, 0, panel_width, 28)
+    pygame.draw.rect(panel_surface, (40, 80, 120, 200), title_rect, border_radius=8)
+    pygame.draw.rect(panel_surface, (40, 80, 120, 200), (0, 20, panel_width, 10))  # 补齐下方圆角
+
+    # 标题文字
+    title_text = FONT_SMALL.render("病毒统计", True, (100, 220, 255))
+    title_x = (panel_width - title_text.get_width()) // 2
+    panel_surface.blit(title_text, (title_x, 5))
+
+    # 统计内容起始位置
+    content_y = 35
+    line_height = 18
+
+    # 总计信息
+    total_virus = sum(virus_counts.values())
+    total_boss = sum(boss_counts.values())
+    total_text = FONT_TINY.render(f"存活: {total_virus + total_boss}", True, (255, 220, 100))
+    panel_surface.blit(total_text, (10, content_y))
+
+    killed_text = FONT_TINY.render(f"已消灭: {player_exp // 10}", True, (100, 255, 150))
+    panel_surface.blit(killed_text, (100, content_y))
+    content_y += line_height + 5
+
+    # 分割线
+    pygame.draw.line(panel_surface, (80, 120, 160, 150), (10, content_y), (panel_width - 10, content_y))
+    content_y += 8
+
+    # 显示各类病毒（最多显示7种，按数量排序）
+    sorted_viruses = sorted(virus_counts.items(), key=lambda x: x[1], reverse=True)[:7]
+
+    # 病毒颜色映射
+    virus_colors = {
+        "感冒病毒": (100, 200, 100),
+        "流感病毒": (255, 150, 50),
+        "蛀牙细菌": (200, 200, 180),
+        "鼻涕虫菌": (180, 220, 100),
+        "肚子疼菌": (139, 90, 43),
+        "熬夜菌": (180, 150, 220),
+        "咳嗽病毒": (100, 100, 120),
+        "懒惰菌": (169, 169, 169),
+        "坏情绪菌": (100, 50, 150),
+        "发烧病毒": (255, 80, 50),
+    }
+
+    for virus_name, count in sorted_viruses:
+        if content_y > panel_height - 25:
+            break
+        # 病毒颜色指示点
+        color = virus_colors.get(virus_name, (200, 200, 200))
+        pygame.draw.circle(panel_surface, color, (18, content_y + 6), 5)
+        pygame.draw.circle(panel_surface, (255, 255, 255, 150), (18, content_y + 6), 5, 1)
+
+        # 病毒名称（截断显示）
+        display_name = virus_name[:4] if len(virus_name) > 4 else virus_name
+        name_text = FONT_TINY.render(display_name, True, (220, 220, 220))
+        panel_surface.blit(name_text, (28, content_y))
+
+        # 数量
+        count_text = FONT_TINY.render(f"x{count}", True, color)
+        panel_surface.blit(count_text, (panel_width - 40, content_y))
+
+        content_y += line_height
+
+    # 显示Boss（如果有）
+    if boss_counts:
+        content_y += 3
+        pygame.draw.line(panel_surface, (200, 80, 80, 150), (10, content_y), (panel_width - 10, content_y))
+        content_y += 5
+        for boss_name, count in boss_counts.items():
+            if content_y > panel_height - 20:
+                break
+            # Boss用红色星星标识
+            pygame.draw.circle(panel_surface, (255, 50, 50), (18, content_y + 6), 6)
+            pygame.draw.circle(panel_surface, (255, 200, 100), (18, content_y + 6), 6, 1)
+
+            display_name = boss_name[:4] if len(boss_name) > 4 else boss_name
+            boss_text = FONT_TINY.render(display_name, True, (255, 100, 100))
+            panel_surface.blit(boss_text, (28, content_y))
+
+            count_text = FONT_TINY.render(f"x{count}", True, (255, 150, 100))
+            panel_surface.blit(count_text, (panel_width - 40, content_y))
+            content_y += line_height
+
+    # 绘制面板到窗口
+    window.blit(panel_surface, (panel_x, panel_y))
 
     pygame.display.flip()
     clock.tick(60)
@@ -2491,7 +2607,7 @@ while running:
     if player_light_index is not None and player_light_index >= 0:
         lighting_system.update_light(player_light_index, player_x, player_y)
 
-    # 检查玩家是否接近怪物并启动对话
+    # 检查玩家是否接近病毒并启动对话
     for monster in monsters:
         if monster.check_collision(player_x, player_y, player_size):
             if not player_monster_dialogue.is_active:
@@ -2531,7 +2647,7 @@ class Shop:
         y_offset = shop_y + 50
         item_index = 1
         for item_name, item_info in self.items.items():
-            item_text = f"[{item_index}] {item_name}: {item_info['cost']} 经验"
+            item_text = f"[{item_index}] {item_name}: {item_info['cost']} 免疫力"
             desc_text = f"    {item_info['description']}"
 
             color = GREEN if player_exp >= item_info['cost'] else RED
@@ -2584,17 +2700,17 @@ while running:
                 if shop.buy_item("Health Pack", ):
                     print("购买成功：健康包")
                 else:
-                    print("购买失败：经验不足")
+                    print("购买失败：免疫力不足")
             elif event.key == pygame.K_2:  # 购买铁剑
                 if shop.buy_item("Iron Sword", ):
                     print("购买成功：铁剑")
                 else:
-                    print("购买失败：经验不足")
+                    print("购买失败：免疫力不足")
             elif event.key == pygame.K_3:  # 购买钢剑
                 if shop.buy_item("Steel Sword", ):
                     print("购买成功：钢剑")
                 else:
-                    print("购买失败：经验不足")
+                    print("购买失败：免疫力不足")
 
     # 其他游戏逻辑...
 

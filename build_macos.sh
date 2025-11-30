@@ -1,7 +1,7 @@
 #!/bin/bash
-# macOS 打包脚本 - 迷宫大冒险
+# macOS 打包脚本 - 免疫大作战
 
-echo "=== 迷宫大冒险 macOS 打包脚本 ==="
+echo "=== 免疫大作战 macOS 打包脚本 ==="
 echo
 
 # 检查 Python
@@ -26,17 +26,17 @@ echo "[3/3] 开始打包..."
 pyinstaller --clean build_config.spec
 
 # 检查结果
-if [ -d "dist/迷宫大冒险.app" ]; then
+if [ -d "dist/免疫大作战.app" ]; then
     echo
     echo "============================================"
     echo "           打包成功!"
     echo "============================================"
     echo
-    echo "应用位置: dist/迷宫大冒险.app"
+    echo "应用位置: dist/免疫大作战.app"
     echo
     echo "你可以:"
-    echo "  1. 双击运行 dist/迷宫大冒险.app"
-    echo "  2. 将 迷宫大冒险.app 拖到 Applications 文件夹安装"
+    echo "  1. 双击运行 dist/免疫大作战.app"
+    echo "  2. 将 免疫大作战.app 拖到 Applications 文件夹安装"
     echo
 
     # 打开输出目录
