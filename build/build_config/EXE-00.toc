@@ -54,7 +54,7 @@
  [],
  False,
  False,
- 1764502045,
+ 1770818220,
  [('runw',
    '/Users/wangxin/anaconda3/envs/py312/lib/python3.12/site-packages/PyInstaller/bootloader/Darwin-64bit/runw',
    'EXECUTABLE')],

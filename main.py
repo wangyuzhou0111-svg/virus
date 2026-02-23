@@ -134,7 +134,7 @@ SKILL_UPGRADE_COST = 500  # 技能升级所需免疫力
 
 SKILLS = {
     "Area Attack": {
-        "key": pygame.K_SPACE,
+        "key": pygame.K_b,
         "damage": 50,
         "range": 200,
         "cooldown": 600,  # 10秒 (600帧 ÷ 60帧/秒 = 10秒)
@@ -174,6 +174,70 @@ SKILLS = {
         "color": (212, 223, 7),  # 金色
         "description": "Multi-directional burst shot",
         "level": 1  # 初始等级
+    }
+}
+
+# 病毒危害介绍（消灭后展示，每种只展示一次）
+VIRUS_DESCRIPTIONS = {
+    "感冒病毒": {
+        "title": "感冒病毒",
+        "description": "感冒病毒是最常见的呼吸道病毒，会引起打喷嚏、流鼻涕、喉咙痛等症状。虽然大多数感冒可以自愈，但如果不注意休息，可能会引发更严重的疾病。",
+        "prevention": "预防方法：勤洗手、多喝水、注意保暖、保持室内通风。"
+    },
+    "流感病毒": {
+        "title": "流感病毒",
+        "description": "流感病毒比普通感冒更加危险，会引起高烧、全身酸痛、极度疲劳等症状。流感每年在全球造成数十万人死亡，尤其对老人和儿童威胁更大。",
+        "prevention": "预防方法：每年接种流感疫苗、避免去人群密集的地方、戴口罩。"
+    },
+    "蛀牙细菌": {
+        "title": "蛀牙细菌（变形链球菌）",
+        "description": "蛀牙细菌会分解食物残渣产生酸性物质，腐蚀牙齿表面的牙釉质，形成蛀洞。严重时会导致牙痛、牙齿脱落，甚至引发牙周炎。",
+        "prevention": "预防方法：早晚刷牙、饭后漱口、少吃甜食、定期看牙医。"
+    },
+    "鼻涕虫菌": {
+        "title": "鼻涕虫菌（鼻病毒）",
+        "description": "鼻病毒是引起鼻炎和流鼻涕的主要元凶，感染后鼻腔会产生大量黏液。长期反复感染可能导致慢性鼻炎，影响呼吸和睡眠质量。",
+        "prevention": "预防方法：远离过敏原、保持鼻腔清洁、增强体质。"
+    },
+    "肚子疼菌": {
+        "title": "肚子疼菌（大肠杆菌）",
+        "description": "某些有害的大肠杆菌会引起严重的腹痛、腹泻和呕吐。它们通常通过不洁食物和水传播，严重时可能导致脱水，对儿童尤其危险。",
+        "prevention": "预防方法：饭前便后洗手、食物要煮熟、不喝生水。"
+    },
+    "熬夜菌": {
+        "title": "熬夜菌",
+        "description": "熬夜会严重削弱免疫系统，让身体更容易被各种病菌入侵。长期熬夜还会影响生长发育、记忆力下降、注意力不集中，对青少年危害尤其严重。",
+        "prevention": "预防方法：保持规律作息、每天睡足8-10小时、睡前远离电子设备。"
+    },
+    "咳嗽病毒": {
+        "title": "咳嗽病毒（副流感病毒）",
+        "description": "副流感病毒主要攻击呼吸道，引起持续咳嗽、喉咙发炎等症状。剧烈咳嗽不仅让人难受，还会通过飞沫传播给周围的人。",
+        "prevention": "预防方法：咳嗽时遮住口鼻、多喝温水、保持空气湿润。"
+    },
+    "懒惰菌": {
+        "title": "懒惰菌",
+        "description": "缺乏运动会让身体的免疫力持续下降，新陈代谢变慢。懒惰菌让人不想动、不想学习，长期下去会导致肥胖、体质变差、容易生病。",
+        "prevention": "预防方法：每天运动至少1小时、少坐多动、培养运动爱好。"
+    },
+    "坏情绪菌": {
+        "title": "坏情绪菌",
+        "description": "长期的坏情绪（焦虑、愤怒、悲伤）会影响免疫系统的正常工作，让身体更容易被病菌入侵。坏情绪还会影响食欲和睡眠，形成恶性循环。",
+        "prevention": "预防方法：学会倾诉、多做喜欢的事、深呼吸放松、和朋友一起玩耍。"
+    },
+    "发烧病毒": {
+        "title": "发烧病毒（腺病毒）",
+        "description": "腺病毒感染后会引起持续高烧，体温可达39-40°C。高烧会消耗大量体力，严重时可能引起惊厥，需要及时就医治疗。",
+        "prevention": "预防方法：增强免疫力、注意个人卫生、发烧时及时看医生。"
+    },
+    "超级流感": {
+        "title": "超级流感（变异流感病毒）",
+        "description": "超级流感是流感病毒的变异版本，传染性更强、症状更重。它能快速传播，引发大规模疫情，是公共卫生的重大威胁。",
+        "prevention": "预防方法：及时接种疫苗、做好个人防护、出现症状立即隔离就医。"
+    },
+    "病毒之王": {
+        "title": "病毒之王",
+        "description": "病毒之王是所有病毒中最强大的存在，它集合了多种病毒的特性，攻击力极强。只有拥有强大免疫力的人才能战胜它！",
+        "prevention": "预防方法：均衡饮食、充足睡眠、坚持运动、保持好心情——全面提升免疫力！"
     }
 }
 
@@ -296,37 +360,6 @@ class Monster:
             screen_y < -margin or screen_y > WINDOW_HEIGHT + margin):
             return
 
-        # 预计算底光效果
-        if not hasattr(self, '_glow_surface'):
-            glow_size = int(self.size * 1.8)
-            self._glow_surface = pygame.Surface((glow_size, glow_size), pygame.SRCALPHA)
-            # 根据病毒类型选择光晕颜色
-            glow_colors = {
-                "感冒病毒": (100, 255, 100),      # 绿色
-                "流感病毒": (255, 180, 80),       # 橙色
-                "蛀牙细菌": (220, 220, 200),      # 米白色
-                "鼻涕虫菌": (180, 255, 120),      # 黄绿色
-                "肚子疼菌": (180, 120, 80),       # 棕色
-                "熬夜菌": (200, 170, 255),        # 淡紫色
-                "咳嗽病毒": (150, 150, 180),      # 灰蓝色
-                "懒惰菌": (200, 200, 200),        # 灰色
-                "坏情绪菌": (150, 80, 200),       # 紫色
-                "发烧病毒": (255, 120, 80),       # 红橙色
-                "超级流感": (255, 80, 80),        # 红色
-                "病毒之王": (180, 80, 200),       # 紫黑色
-            }
-            glow_color = glow_colors.get(self.name, (255, 255, 255))
-            # 绘制多层渐变光晕
-            center = glow_size // 2
-            for i in range(glow_size // 2, 0, -3):
-                alpha = int(80 * (i / (glow_size // 2)))
-                pygame.draw.circle(self._glow_surface, (*glow_color, alpha), (center, center), i)
-
-        # 绘制底光（在病毒下方）
-        glow_size = int(self.size * 1.8)
-        window.blit(self._glow_surface,
-                   (screen_x - glow_size // 2, screen_y - glow_size // 2))
-
         # 优化：使用预计算的阴影表面
         if not hasattr(self, '_shadow_surface'):
             self._shadow_surface = pygame.Surface((self.size, self.size//2), pygame.SRCALPHA)
@@ -337,43 +370,14 @@ class Monster:
         window.blit(self._shadow_surface,
                    (screen_x - self.size//2, screen_y + self.size//4))
 
-        # 预计算带发光边框的病毒表面
+        # 预计算病毒表面
         if not hasattr(self, '_monster_surface'):
             # 尝试使用图片
             monster_img = MONSTER_IMAGES.get(self.name)
             if monster_img is not None:
-                # 缩放图片
-                scaled_img = pygame.transform.scale(monster_img, (self.size, self.size))
-                # 创建带边框的表面（稍大一点以容纳边框）
-                border_size = max(2, self.size // 15)
-                surface_size = self.size + border_size * 2
-                self._monster_surface = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
-                # 绘制发光边框（多层实现柔和效果）
-                glow_colors = {
-                    "感冒病毒": (100, 255, 100),
-                    "流感病毒": (255, 180, 80),
-                    "蛀牙细菌": (220, 220, 200),
-                    "鼻涕虫菌": (180, 255, 120),
-                    "肚子疼菌": (180, 120, 80),
-                    "熬夜菌": (200, 170, 255),
-                    "咳嗽病毒": (150, 150, 180),
-                    "懒惰菌": (200, 200, 200),
-                    "坏情绪菌": (150, 80, 200),
-                    "发烧病毒": (255, 120, 80),
-                    "超级流感": (255, 80, 80),
-                    "病毒之王": (180, 80, 200),
-                }
-                border_color = glow_colors.get(self.name, (255, 255, 255))
-                # 外层光晕
-                for i in range(border_size, 0, -1):
-                    alpha = int(150 * (i / border_size))
-                    rect = (border_size - i, border_size - i,
-                           self.size + i * 2, self.size + i * 2)
-                    pygame.draw.rect(self._monster_surface, (*border_color, alpha), rect,
-                                   border_radius=max(3, self.size // 8))
-                # 绘制病毒图片
-                self._monster_surface.blit(scaled_img, (border_size, border_size))
-                self._border_offset = border_size
+                # 缩放图片直接作为表面
+                self._monster_surface = pygame.transform.scale(monster_img, (self.size, self.size)).convert_alpha()
+                self._border_offset = 0
             else:
                 # 回退到默认的圆形渲染
                 self._monster_surface = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
@@ -408,15 +412,24 @@ class Monster:
         hp_bar_height = 5
         hp_bar_x = screen_x - hp_bar_width//2
         hp_bar_y = screen_y - self.size//2 - 15
-        
+
+        # 在血条上方显示病毒名称
+        name_text = self.font.render(self.name, True, (255, 255, 255))
+        name_rect = name_text.get_rect(centerx=screen_x, bottom=hp_bar_y - 2)
+        # 名称背景（半透明）
+        name_bg = pygame.Surface((name_rect.width + 6, name_rect.height + 2), pygame.SRCALPHA)
+        name_bg.fill((0, 0, 0, 120))
+        window.blit(name_bg, (name_rect.x - 3, name_rect.y - 1))
+        window.blit(name_text, name_rect)
+
         # 血条边框（只在边框绘制）
         pygame.draw.rect(window, (40, 40, 40),
                        (hp_bar_x-1, hp_bar_y-1, hp_bar_width+2, hp_bar_height+2))
-        
+
         # 血条背景
         pygame.draw.rect(window, (100, 45, 21),
                        (hp_bar_x, hp_bar_y, hp_bar_width, hp_bar_height))
-        
+
         # 当前血量条（优化颜色计算）
         hp_percentage = self.hp / self.max_hp
         current_width = int(hp_bar_width * hp_percentage)
@@ -865,10 +878,11 @@ for monster_name in MONSTER_IMAGE_NAMES:
 # 玩家朝向和武器攻击相关变量
 player_facing_angle = 0  # 玩家朝向角度（弧度）
 player_facing_direction = "right"  # 玩家朝向方向
-weapon_swing_angle = 0  # 武器挥动角度
-weapon_is_swinging = False  # 是否正在挥动武器
-weapon_swing_timer = 0  # 挥动计时器
-WEAPON_SWING_DURATION = 15  # 挥动持续帧数
+weapon_swing_angle = 0  # 武器挥动角度（兼容保留）
+weapon_is_swinging = False  # 是否正在攻击
+weapon_swing_timer = 0  # 攻击计时器
+WEAPON_SWING_DURATION = 12  # 攻击持续帧数（突刺更快）
+weapon_thrust_offset = 0  # 注射器突刺位移
 
 # 鼠标拖拽视角相关变量
 mouse_dragging = False
@@ -912,6 +926,22 @@ is_dashing = False  # 初始化冲刺状态
 # Game state
 game_won = False
 game_over = False
+
+# 病毒介绍系统
+virus_introduced = set()  # 已介绍过的病毒名称
+virus_intro_active = False  # 是否正在显示病毒介绍
+virus_intro_name = ""  # 当前展示的病毒名称
+virus_intro_timer = 0  # 介绍显示计时器
+
+def trigger_virus_intro(virus_name):
+    """触发病毒介绍（每种病毒只介绍一次）"""
+    global virus_intro_active, virus_intro_name, virus_intro_timer
+    if virus_name not in virus_introduced and virus_name in VIRUS_DESCRIPTIONS:
+        virus_introduced.add(virus_name)
+        virus_intro_active = True
+        virus_intro_name = virus_name
+        virus_intro_timer = 0
+
 monsters = generate_monsters(60)  # 调整初始病毒数量为60个（翻倍）
 combat_cooldown = 0
 COMBAT_COOLDOWN_MAX = 30  # 战斗冷却时间（帧数）
@@ -1297,6 +1327,10 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            # 优先处理病毒介绍关闭（空格键跳过）
+            if virus_intro_active and event.key == pygame.K_SPACE:
+                virus_intro_active = False
+                continue
             # 优先处理复活按键（游戏结束时）
             if event.key == pygame.K_r and game_over:
                 game_over = False
@@ -1456,7 +1490,8 @@ while running:
                                 # 如果怪物死亡，获得经验值
                                 if not monster.is_alive:
                                     player_exp += monster.exp_reward
-                                    
+                                    trigger_virus_intro(monster.name)
+
                                     # 添加死亡特效
                                     for _ in range(15):
                                         angle = random.uniform(0, math.pi * 2)
@@ -1583,6 +1618,7 @@ while running:
                             # 如果怪物死亡，获得经验值
                             if not monster.is_alive:
                                 player_exp += monster.exp_reward
+                                trigger_virus_intro(monster.name)
                                 # 随机掉落更好的武器
                                 if random.random() < 0.2:  # 20%的概率掉落武器
                                     upgrade_weapon()
@@ -1663,7 +1699,11 @@ while running:
         clock.tick(60)
         continue
 
-    if not game_won and not game_over:
+    # 病毒介绍显示期间暂停游戏逻辑（但仍然绘制画面）
+    if virus_intro_active:
+        virus_intro_timer += 1
+
+    if not game_won and not game_over and not virus_intro_active:
         # Get key state
         keys = pygame.key.get_pressed()
         
@@ -1854,6 +1894,7 @@ while running:
                                     )
                                 if not monster.is_alive:
                                     player_exp += monster.exp_reward
+                                    trigger_virus_intro(monster.name)
 
                     # 添加范围攻击视觉效果
                     skill_effects.append({
@@ -2045,6 +2086,7 @@ while running:
                         if not monster.is_alive:
                             # 添加经验值
                             player_exp += monster.exp_reward
+                            trigger_virus_intro(monster.name)
                             # 检查是否升级
                             while player_exp >= player_exp_to_next_level:
                                 player_level += 1
@@ -2112,89 +2154,92 @@ while running:
                              (player_x - camera_x, player_y - camera_y),
                              player_size // 2)
 
-    # 绘制武器（握在手里，只有左右方向）
+    # 绘制武器（注射器突刺动画）
     screen_player_x = player_x - camera_x
     screen_player_y = player_y - camera_y
 
-    # 武器挥动动画更新
+    # 突刺动画更新：蓄力抬起 → 快速扎下 → 缩回
     if weapon_is_swinging:
         weapon_swing_timer -= 1
         swing_progress = 1 - (weapon_swing_timer / WEAPON_SWING_DURATION)
-        # 挥动角度从+60度到-60度（从上往下挥）
-        weapon_swing_angle = 60 - swing_progress * 120
+        if swing_progress < 0.2:
+            # 蓄力阶段：注射器向后抬起
+            t = swing_progress / 0.2
+            weapon_thrust_offset = -8 * t       # 向后缩
+            weapon_swing_angle = -30 * t         # 向上抬起30度
+        elif swing_progress < 0.5:
+            # 突刺阶段：快速向前扎出
+            t = (swing_progress - 0.2) / 0.3
+            weapon_thrust_offset = -8 + 32 * t   # 从-8冲到+24
+            weapon_swing_angle = -30 + 45 * t     # 从-30转到+15（向下扎）
+        else:
+            # 回收阶段：缓慢缩回复位
+            t = (swing_progress - 0.5) / 0.5
+            weapon_thrust_offset = 24 * (1 - t)
+            weapon_swing_angle = 15 * (1 - t)
         if weapon_swing_timer <= 0:
             weapon_is_swinging = False
+            weapon_thrust_offset = 0
             weapon_swing_angle = 0
 
-    # 判断朝左还是朝右（只有左右两个方向）
-    facing_left = player_direction == "left" or player_direction == "up"  # 上也算左
+    # 判断朝左还是朝右
+    facing_left = player_direction == "left" or player_direction == "up"
 
     # 手的位置（紧贴角色边缘）
-    hand_offset_x = player_size // 2 - 10  # 手在角色边缘内侧
-    hand_offset_y = 2  # 手稍微偏下
+    hand_offset_x = player_size // 2 - 4
+    hand_offset_y = 0
 
     if facing_left:
         hand_x = screen_player_x - hand_offset_x
-        hand_y = screen_player_y + hand_offset_y
     else:
         hand_x = screen_player_x + hand_offset_x
-        hand_y = screen_player_y + hand_offset_y
+    hand_y = screen_player_y + hand_offset_y
 
-    # 武器参数
-    weapon_half_size = 16  # 武器图片一半大小
-    default_angle = -45  # 默认向上倾斜45度（朝右时为右上，即指向右上方）
-
-    # 朝右时的角度计算（基准）
-    # actual_angle: 剑指向的实际角度（从手出发）
-    # 默认-45度（右上），挥动时从+15度到-105度
-    right_actual_angle = default_angle + weapon_swing_angle
+    # 突刺方向
+    thrust_dir = -1 if facing_left else 1
 
     if weapon_image_original:
+        weapon_display_size = 32
+
+        # 原图针头朝右上约45度，pygame.rotate正值=逆时针
+        # 朝右：顺时针转45度(rotate -45)让针头水平朝右
+        # 朝左：翻转后针头朝左上，逆时针转45度(rotate +45)让针头水平朝左
+        attack_angle = weapon_swing_angle
         if facing_left:
-            # 朝左：完全镜像朝右的效果
-            # 水平镜像图片
             weapon_img = pygame.transform.flip(weapon_image_original, True, False)
-            # 镜像角度计算：X轴镜像，角度变为 180 - angle
-            # 朝右-45度（右上） -> 朝左225度（左上） = 180 - (-45) = 225
-            actual_angle = 180 - right_actual_angle
-            # 图片旋转角度：因为图片已经水平翻转，需要调整旋转
-            # 原始图片假设剑尖朝右下(-45度方向)，翻转后剑尖朝左下
-            # 要让翻转后的剑指向actual_angle方向
-            rot_angle = -(actual_angle - 180) - 45
+            rot_angle = 45 + attack_angle
         else:
-            # 朝右
             weapon_img = weapon_image_original
-            actual_angle = right_actual_angle
-            # 原始图片剑尖朝右下，旋转使其指向actual_angle
-            rot_angle = -actual_angle - 45
+            rot_angle = -45 - attack_angle
 
-        # 旋转武器
-        rotated_weapon = pygame.transform.rotate(weapon_img, rot_angle)
+        scaled_img = pygame.transform.scale(weapon_img, (weapon_display_size, weapon_display_size))
+        rotated_weapon = pygame.transform.rotate(scaled_img, rot_angle)
 
-        # 武器中心相对于手的偏移（让剑柄在手上，剑身向外延伸）
-        angle_rad = math.radians(actual_angle)
-        offset_x = math.cos(angle_rad) * weapon_half_size
-        offset_y = math.sin(angle_rad) * weapon_half_size
+        # 武器中心：手的位置 + 朝前方偏移 + 突刺位移
+        weapon_cx = hand_x + thrust_dir * (14 + weapon_thrust_offset)
+        # 突刺时针头略微下压
+        weapon_cy = hand_y + weapon_swing_angle * 0.15
 
-        weapon_center_x = hand_x + offset_x
-        weapon_center_y = hand_y + offset_y
-
-        weapon_rect = rotated_weapon.get_rect(center=(weapon_center_x, weapon_center_y))
+        weapon_rect = rotated_weapon.get_rect(center=(weapon_cx, weapon_cy))
         window.blit(rotated_weapon, weapon_rect)
     else:
-        # 备用：绘制简单的武器线条（以手为轴心）
-        weapon_length = 22
-        if facing_left:
-            actual_angle = 180 - right_actual_angle
-        else:
-            actual_angle = right_actual_angle
-        angle_rad = math.radians(actual_angle)
-        weapon_end_x = hand_x + math.cos(angle_rad) * weapon_length
-        weapon_end_y = hand_y + math.sin(angle_rad) * weapon_length
-        # 剑身
-        pygame.draw.line(window, (192, 192, 192),
-                        (int(hand_x), int(hand_y)),
-                        (int(weapon_end_x), int(weapon_end_y)), 3)
+        # 备用：绘制简单的注射器线条
+        jab_angle = math.radians(weapon_swing_angle)
+        base_x = hand_x + thrust_dir * (8 + weapon_thrust_offset)
+        base_y = hand_y + weapon_swing_angle * 0.15
+        needle_len = 24
+        tip_x = base_x + thrust_dir * needle_len * math.cos(jab_angle)
+        tip_y = base_y + needle_len * math.sin(jab_angle)
+        # 针管
+        pygame.draw.line(window, (200, 200, 220),
+                        (int(base_x), int(base_y)),
+                        (int(tip_x), int(tip_y)), 3)
+        # 针头
+        extra = 6
+        pygame.draw.line(window, (220, 220, 230),
+                        (int(tip_x), int(tip_y)),
+                        (int(tip_x + thrust_dir * extra * math.cos(jab_angle)),
+                         int(tip_y + extra * math.sin(jab_angle))), 1)
 
     # Draw health packs
     for health_pack in health_packs:
@@ -2590,6 +2635,78 @@ while running:
 
     # 绘制面板到窗口
     window.blit(panel_surface, (panel_x, panel_y))
+
+    # ========== 病毒介绍弹窗 ==========
+    if virus_intro_active and virus_intro_name in VIRUS_DESCRIPTIONS:
+        virus_info = VIRUS_DESCRIPTIONS[virus_intro_name]
+
+        # 半透明遮罩
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 160))
+        window.blit(overlay, (0, 0))
+
+        # 介绍面板尺寸
+        panel_w = 600
+        panel_h = 360
+        panel_px = (WINDOW_WIDTH - panel_w) // 2
+        panel_py = (WINDOW_HEIGHT - panel_h) // 2
+
+        # 面板背景
+        intro_panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        intro_panel.fill((20, 30, 50, 230))
+        window.blit(intro_panel, (panel_px, panel_py))
+
+        # 面板边框（双层）
+        pygame.draw.rect(window, (100, 200, 255), (panel_px, panel_py, panel_w, panel_h), 2)
+        pygame.draw.rect(window, (60, 120, 180), (panel_px + 4, panel_py + 4, panel_w - 8, panel_h - 8), 1)
+
+        # 顶部装饰条
+        pygame.draw.rect(window, (100, 200, 255), (panel_px + 10, panel_py + 8, panel_w - 20, 3))
+
+        # 标题："已消灭！"
+        defeat_text = FONT_LARGE.render(f"已消灭 {virus_info['title']}！", True, (255, 220, 100))
+        defeat_rect = defeat_text.get_rect(centerx=WINDOW_WIDTH // 2, top=panel_py + 20)
+        window.blit(defeat_text, defeat_rect)
+
+        # 分割线
+        pygame.draw.line(window, (80, 140, 200),
+                        (panel_px + 20, panel_py + 55),
+                        (panel_px + panel_w - 20, panel_py + 55))
+
+        # 危害介绍标签
+        label_text = FONT_SMALL.render("【危害介绍】", True, (255, 150, 100))
+        window.blit(label_text, (panel_px + 20, panel_py + 65))
+
+        # 自动换行显示描述文本
+        desc = virus_info["description"]
+        line_y = panel_py + 90
+        chars_per_line = 28  # 每行中文字符数
+        for i in range(0, len(desc), chars_per_line):
+            line_text = desc[i:i + chars_per_line]
+            rendered = FONT_SMALL.render(line_text, True, (220, 220, 220))
+            window.blit(rendered, (panel_px + 25, line_y))
+            line_y += 24
+
+        # 预防方法标签
+        line_y += 10
+        prev_label = FONT_SMALL.render("【预防方法】", True, (100, 255, 150))
+        window.blit(prev_label, (panel_px + 20, line_y))
+        line_y += 26
+
+        prev = virus_info["prevention"]
+        for i in range(0, len(prev), chars_per_line):
+            line_text = prev[i:i + chars_per_line]
+            rendered = FONT_SMALL.render(line_text, True, (180, 255, 200))
+            window.blit(rendered, (panel_px + 25, line_y))
+            line_y += 24
+
+        # 底部提示（闪烁效果）
+        if (virus_intro_timer // 30) % 2 == 0:
+            skip_text = FONT_SMALL.render("按 空格键 继续游戏", True, (200, 200, 200))
+        else:
+            skip_text = FONT_SMALL.render("按 空格键 继续游戏", True, (255, 255, 100))
+        skip_rect = skip_text.get_rect(centerx=WINDOW_WIDTH // 2, bottom=panel_py + panel_h - 15)
+        window.blit(skip_text, skip_rect)
 
     pygame.display.flip()
     clock.tick(60)
