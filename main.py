@@ -40,7 +40,7 @@ pygame.key.stop_text_input()
 
 # Set up game window
 WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 1000
+WINDOW_HEIGHT = 900
 window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("免疫大作战")
 
@@ -240,6 +240,44 @@ VIRUS_DESCRIPTIONS = {
         "prevention": "预防方法：均衡饮食、充足睡眠、坚持运动、保持好心情——全面提升免疫力！"
     }
 }
+
+def wrap_text_by_width(text, font, max_width):
+    """按像素宽度自动换行，适配中文和英文混排"""
+    if not text:
+        return []
+
+    lines = []
+    current_line = ""
+    for char in text:
+        test_line = current_line + char
+        if font.size(test_line)[0] <= max_width:
+            current_line = test_line
+        else:
+            if current_line:
+                lines.append(current_line)
+            current_line = char
+
+    if current_line:
+        lines.append(current_line)
+
+    return lines
+
+def build_virus_codex_entries(content_width):
+    """构建图鉴内容缓存，避免每帧重复分行计算"""
+    entries = []
+    for virus_name, virus_info in VIRUS_DESCRIPTIONS.items():
+        desc_lines = wrap_text_by_width(virus_info["description"], FONT_SMALL, content_width)
+        prevention_lines = wrap_text_by_width(virus_info["prevention"], FONT_SMALL, content_width)
+        entries.append({
+            "name": virus_name,
+            "title": virus_info["title"],
+            "desc_lines": desc_lines,
+            "prevention_lines": prevention_lines
+        })
+    return entries
+
+VIRUS_CODEX_CONTENT_WIDTH = 620
+VIRUS_CODEX_ENTRIES = build_virus_codex_entries(VIRUS_CODEX_CONTENT_WIDTH)
 
 # Boss病毒类型定义
 BOSS_TYPES = [
@@ -875,6 +913,16 @@ for monster_name in MONSTER_IMAGE_NAMES:
         print(f"警告：无法加载 images/{monster_name}.png，将使用默认图形")
         MONSTER_IMAGES[monster_name] = None
 
+CODEX_IMAGE_SIZE = 64
+MONSTER_CODEX_IMAGES = {}
+for monster_name, monster_img in MONSTER_IMAGES.items():
+    if monster_img:
+        MONSTER_CODEX_IMAGES[monster_name] = pygame.transform.smoothscale(
+            monster_img, (CODEX_IMAGE_SIZE, CODEX_IMAGE_SIZE)
+        )
+    else:
+        MONSTER_CODEX_IMAGES[monster_name] = None
+
 # 玩家朝向和武器攻击相关变量
 player_facing_angle = 0  # 玩家朝向角度（弧度）
 player_facing_direction = "right"  # 玩家朝向方向
@@ -932,6 +980,13 @@ virus_introduced = set()  # 已介绍过的病毒名称
 virus_intro_active = False  # 是否正在显示病毒介绍
 virus_intro_name = ""  # 当前展示的病毒名称
 virus_intro_timer = 0  # 介绍显示计时器
+
+# 病毒图鉴系统
+virus_codex_active = False
+virus_codex_scroll = 0
+virus_codex_max_scroll = 0
+virus_codex_button_rect = pygame.Rect((WINDOW_WIDTH - 92) // 2, WINDOW_HEIGHT - 44, 92, 34)
+virus_codex_close_btn_rect = pygame.Rect(0, 0, 0, 0)
 
 def trigger_virus_intro(virus_name):
     """触发病毒介绍（每种病毒只介绍一次）"""
@@ -1327,6 +1382,10 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            if virus_codex_active:
+                if event.key == pygame.K_ESCAPE:
+                    virus_codex_active = False
+                continue
             # 优先处理病毒介绍关闭（空格键跳过）
             if virus_intro_active and event.key == pygame.K_SPACE:
                 virus_intro_active = False
@@ -1588,6 +1647,23 @@ while running:
         
         # 鼠标事件处理
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            if virus_codex_active:
+                if event.button == 1 and virus_codex_close_btn_rect.collidepoint(event.pos):
+                    virus_codex_active = False
+                elif event.button == 4:
+                    virus_codex_scroll = max(0, virus_codex_scroll - 45)
+                elif event.button == 5:
+                    virus_codex_scroll = min(virus_codex_max_scroll, virus_codex_scroll + 45)
+                continue
+
+            if event.button == 1 and (not virus_intro_active) and virus_codex_button_rect.collidepoint(event.pos):
+                virus_codex_active = True
+                virus_codex_scroll = 0
+                continue
+
+            if virus_intro_active:
+                continue
+
             if event.button == 1:  # 左键：近战攻击（根据用户记忆优化）
                 # 触发武器挥动
                 weapon_is_swinging = True
@@ -1663,6 +1739,10 @@ while running:
                 
                 # 在拖拽时停止跟随玩家（确保拖拽过程中不会自动跟随）
                 camera_follow_player = False
+        elif event.type == pygame.MOUSEWHEEL:
+            if virus_codex_active:
+                virus_codex_scroll -= event.y * 45
+                virus_codex_scroll = max(0, min(virus_codex_scroll, virus_codex_max_scroll))
 
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_LSHIFT:  # 松开Shift键停止冲刺
@@ -1703,7 +1783,7 @@ while running:
     if virus_intro_active:
         virus_intro_timer += 1
 
-    if not game_won and not game_over and not virus_intro_active:
+    if not game_won and not game_over and not virus_intro_active and not virus_codex_active:
         # Get key state
         keys = pygame.key.get_pressed()
         
@@ -2636,6 +2716,16 @@ while running:
     # 绘制面板到窗口
     window.blit(panel_surface, (panel_x, panel_y))
 
+    # ========== 右下角图鉴按钮 ==========
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    codex_hovered = virus_codex_button_rect.collidepoint(mouse_x, mouse_y)
+    codex_btn_color = (55, 130, 185) if codex_hovered and not virus_codex_active else (40, 100, 155)
+    pygame.draw.rect(window, codex_btn_color, virus_codex_button_rect, border_radius=8)
+    pygame.draw.rect(window, (140, 220, 255), virus_codex_button_rect, 2, border_radius=8)
+    codex_btn_text = FONT_SMALL.render("图鉴", True, (240, 250, 255))
+    codex_btn_rect = codex_btn_text.get_rect(center=virus_codex_button_rect.center)
+    window.blit(codex_btn_text, codex_btn_rect)
+
     # ========== 病毒介绍弹窗 ==========
     if virus_intro_active and virus_intro_name in VIRUS_DESCRIPTIONS:
         virus_info = VIRUS_DESCRIPTIONS[virus_intro_name]
@@ -2707,6 +2797,99 @@ while running:
             skip_text = FONT_SMALL.render("按 空格键 继续游戏", True, (255, 255, 100))
         skip_rect = skip_text.get_rect(centerx=WINDOW_WIDTH // 2, bottom=panel_py + panel_h - 15)
         window.blit(skip_text, skip_rect)
+
+    # ========== 病毒图鉴弹窗 ==========
+    if virus_codex_active:
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        window.blit(overlay, (0, 0))
+
+        codex_w = 820
+        codex_h = 760
+        codex_x = (WINDOW_WIDTH - codex_w) // 2
+        codex_y = (WINDOW_HEIGHT - codex_h) // 2
+
+        codex_bg = pygame.Surface((codex_w, codex_h), pygame.SRCALPHA)
+        codex_bg.fill((16, 28, 45, 235))
+        window.blit(codex_bg, (codex_x, codex_y))
+        pygame.draw.rect(window, (120, 210, 255), (codex_x, codex_y, codex_w, codex_h), 2, border_radius=10)
+        pygame.draw.rect(window, (55, 140, 185), (codex_x + 4, codex_y + 4, codex_w - 8, codex_h - 8), 1, border_radius=8)
+
+        title_text = FONT_LARGE.render("病毒图鉴", True, (255, 225, 120))
+        window.blit(title_text, (codex_x + 24, codex_y + 18))
+        hint_text = FONT_TINY.render("鼠标滚轮可滚动查看全部介绍", True, (175, 215, 240))
+        window.blit(hint_text, (codex_x + 26, codex_y + 50))
+
+        close_btn_w = 92
+        close_btn_h = 32
+        virus_codex_close_btn_rect = pygame.Rect(codex_x + codex_w - close_btn_w - 22, codex_y + 18, close_btn_w, close_btn_h)
+        close_hovered = virus_codex_close_btn_rect.collidepoint(mouse_x, mouse_y)
+        close_color = (170, 70, 70) if close_hovered else (140, 55, 55)
+        pygame.draw.rect(window, close_color, virus_codex_close_btn_rect, border_radius=7)
+        pygame.draw.rect(window, (255, 180, 170), virus_codex_close_btn_rect, 1, border_radius=7)
+        close_text = FONT_SMALL.render("关闭", True, (255, 235, 235))
+        window.blit(close_text, close_text.get_rect(center=virus_codex_close_btn_rect.center))
+
+        viewport_x = codex_x + 24
+        viewport_y = codex_y + 86
+        viewport_w = codex_w - 48
+        viewport_h = codex_h - 110
+
+        content_height = 18
+        for entry in VIRUS_CODEX_ENTRIES:
+            text_height = 24 + len(entry["desc_lines"]) * 22 + 6 + 22 + len(entry["prevention_lines"]) * 22 + 8
+            entry_height = max(82, text_height) + 10
+            content_height += entry_height
+        content_height += 12
+
+        content_surface = pygame.Surface((viewport_w, max(viewport_h, content_height)), pygame.SRCALPHA)
+        draw_y = 10
+        for index, entry in enumerate(VIRUS_CODEX_ENTRIES):
+            entry_top = draw_y
+
+            # 左侧病毒图片
+            image_frame = pygame.Rect(10, entry_top + 4, 74, 74)
+            pygame.draw.rect(content_surface, (55, 95, 128, 220), image_frame, border_radius=8)
+            pygame.draw.rect(content_surface, (110, 165, 205, 220), image_frame, 1, border_radius=8)
+            codex_img = MONSTER_CODEX_IMAGES.get(entry["name"])
+            if codex_img:
+                img_rect = codex_img.get_rect(center=image_frame.center)
+                content_surface.blit(codex_img, img_rect)
+            else:
+                pygame.draw.circle(content_surface, (140, 150, 160), image_frame.center, 18)
+                content_surface.blit(FONT_TINY.render("无图", True, (30, 40, 50)), (image_frame.x + 24, image_frame.y + 30))
+
+            # 右侧文字
+            text_x = 96
+            text_y = entry_top + 2
+            title_line = FONT_SMALL.render(f"{index + 1}. {entry['title']}", True, (255, 220, 120))
+            content_surface.blit(title_line, (text_x, text_y))
+            text_y += 24
+
+            for line in entry["desc_lines"]:
+                content_surface.blit(FONT_SMALL.render(line, True, (225, 228, 234)), (text_x, text_y))
+                text_y += 22
+
+            text_y += 6
+            content_surface.blit(FONT_SMALL.render("预防：", True, (130, 240, 170)), (text_x, text_y))
+            text_y += 22
+            for line in entry["prevention_lines"]:
+                content_surface.blit(FONT_SMALL.render(line, True, (188, 250, 210)), (text_x + 16, text_y))
+                text_y += 22
+
+            entry_bottom = max(entry_top + 82, text_y + 6)
+            pygame.draw.line(content_surface, (70, 105, 135, 180), (8, entry_bottom), (viewport_w - 8, entry_bottom), 1)
+            draw_y = entry_bottom + 10
+
+        virus_codex_max_scroll = max(0, content_surface.get_height() - viewport_h)
+        virus_codex_scroll = max(0, min(virus_codex_scroll, virus_codex_max_scroll))
+        window.blit(
+            content_surface,
+            (viewport_x, viewport_y),
+            area=pygame.Rect(0, virus_codex_scroll, viewport_w, viewport_h)
+        )
+
+        pygame.draw.rect(window, (90, 140, 170), (viewport_x, viewport_y, viewport_w, viewport_h), 1)
 
     pygame.display.flip()
     clock.tick(60)
